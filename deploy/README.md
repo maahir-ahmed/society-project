@@ -6,7 +6,7 @@ Two stacks behind your existing cloudflared tunnel:
 
 ## One-time setup
 
-1. **Clone** to the box, e.g. `/opt/rubric`.
+1. **Clone** to the box, e.g. `/home/maahir/containers/society-project`.
 
 2. **Env files** (not committed):
    ```bash
@@ -53,7 +53,7 @@ Two stacks behind your existing cloudflared tunnel:
 ## Backups
 ```bash
 crontab -e
-0 3 * * *  /opt/rubric/deploy/backup.sh >> /var/log/rubric-backup.log 2>&1
+0 3 * * *  /home/maahir/containers/society-project/deploy/backup.sh >> /home/maahir/containers/rubric-backup.log 2>&1
 ```
 
 ## Notes
