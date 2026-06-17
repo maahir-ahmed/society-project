@@ -15,25 +15,17 @@ Two stacks behind your existing cloudflared tunnel:
    # fill AUTH_SECRET, DB_PASSWORD (openssl rand -base64 32 / 24), etc. Different secrets per stack.
    ```
 
-3. **Shared network** so cloudflared can reach the apps by name:
-   ```bash
-   docker network create edge
-   ```
-   Attach your existing cloudflared container to it: `docker network connect edge cloudflared`
-   (or add `edge` to cloudflared's compose `networks:` and recreate it).
-
-4. **Tunnel ingress** — point the two hostnames at the app containers:
-   - config.yml tunnel: add under `ingress:`
-     ```yaml
+3. **Tunnel ingress** — the apps publish host ports (3000 prod, 3001 dev); cloudflared
+   reaches them via `host.docker.internal`. Add to your cloudflared `config.yml` ingress
+   (above the `http_status:404` line) and restart cloudflared:
+   ```yaml
      - hostname: rubric.maahirahmed.com
-       service: http://rubric_prod_app:3000
+       service: http://host.docker.internal:3000
      - hostname: rubric.maahir.dev
-       service: http://rubric_dev_app:3000
-     - service: http_status:404
-     ```
-   - token/dashboard tunnel: Zero Trust → Tunnels → Public Hostname → add each with the same `service` URLs.
+       service: http://host.docker.internal:3001
+   ```
 
-5. **GitHub self-hosted runner** (repo → Settings → Actions → Runners → New self-hosted runner) on the box. Install as a service so it survives reboots:
+4. **GitHub self-hosted runner** (repo → Settings → Actions → Runners → New self-hosted runner) on the box. Install as a service so it survives reboots:
    ```bash
    ./svc.sh install && ./svc.sh start
    ```

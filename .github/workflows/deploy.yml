@@ -23,7 +23,6 @@ jobs:
 
       - name: Deploy
         run: |
-          docker network inspect edge >/dev/null 2>&1 || docker network create edge
           docker compose --env-file ${{ steps.stack.outputs.envfile }} \
             -p ${{ steps.stack.outputs.project }} \
             -f deploy/docker-compose.yml up -d --build

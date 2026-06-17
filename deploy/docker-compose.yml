@@ -1,7 +1,7 @@
 # One compose file for both hosted stacks. Pick the stack via --env-file:
 #   prod: docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml up -d --build
 #   dev:  docker compose --env-file deploy/.env.dev  -p rubric_dev  -f deploy/docker-compose.yml up -d --build
-# cloudflared reaches the app by container name (${STACK}_app:3000) over the shared `edge` network.
+# cloudflared reaches the app via host.docker.internal:${APP_PORT} (matches the existing tunnel setup).
 services:
   db:
     image: postgres:16-alpine
@@ -35,6 +35,8 @@ services:
     build: { context: .., dockerfile: Dockerfile }
     container_name: ${STACK}_app
     restart: unless-stopped
+    ports:
+      - "${APP_PORT}:3000"   # cloudflared hits host.docker.internal:${APP_PORT}
     environment:
       DATABASE_URL: postgresql://society_user:${DB_PASSWORD}@db:5432/society_platform?schema=public
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
@@ -53,7 +55,7 @@ services:
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
-    networks: [internal, edge]
+    networks: [internal]
 
 volumes:
   db_data:
@@ -61,5 +63,3 @@ volumes:
 
 networks:
   internal:
-  edge:
-    external: true   # create once: docker network create edge  (cloudflared joins this too)
