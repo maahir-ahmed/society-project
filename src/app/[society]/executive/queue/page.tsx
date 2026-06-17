@@ -1,0 +1,271 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { UserAvatar } from "@/components/shared/UserAvatar";
+import { MarkReimbursedButton } from "@/components/requests/MarkReimbursedButton";
+import { formatDate, formatCurrency } from "@/lib/utils";
+import { treasuryApprovalsNeeded } from "@/lib/permissions";
+import { Shield, QrCode, Building2, Wallet, Banknote, CheckCircle } from "lucide-react";
+
+interface Props {
+  params: Promise<{ society: string }>;
+}
+
+export default async function ExecutiveQueuePage({ params }: Props) {
+  const { society: societySlug } = await params;
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const membership = await prisma.societyMembership.findFirst({
+    where: { userId: session.user.id, society: { slug: societySlug }, isActive: true },
+  });
+  if (!membership || membership.role !== "EXECUTIVE") redirect(`/${societySlug}/dashboard`);
+
+  const societyId = membership.societyId;
+
+  const [rubricPending, roomPending, treasuryApproving, reimbursementPending] = await Promise.all([
+    prisma.contentRequest.findMany({
+      where: { societyId, rubricRequired: true, rubricEventLink: null, status: { notIn: ["CANCELLED", "COMPLETED"] } },
+      include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
+      orderBy: { deadline: "asc" },
+    }),
+    prisma.roomBooking.findMany({
+      where: { societyId, status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
+      include: {
+        submittedBy: { select: { id: true, name: true, avatarUrl: true } },
+        assignedTo: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      orderBy: { preferredDate: "asc" },
+    }),
+    prisma.treasuryRequest.findMany({
+      where: { societyId, status: "AWAITING_APPROVAL" },
+      include: {
+        submittedBy: { select: { id: true, name: true, avatarUrl: true } },
+        approvals: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.treasuryRequest.findMany({
+      where: { societyId, status: "REIMBURSEMENT_PENDING" },
+      include: {
+        submittedBy: { select: { id: true, name: true, avatarUrl: true } },
+        bankAccount: true,
+      },
+      orderBy: { updatedAt: "asc" },
+    }),
+  ]);
+
+  const totalPending =
+    rubricPending.length + roomPending.length + treasuryApproving.length + reimbursementPending.length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
+          <Shield className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Executive Queue</h1>
+          <p className="text-sm text-muted-foreground">
+            {totalPending} item{totalPending !== 1 ? "s" : ""} requiring attention
+          </p>
+        </div>
+      </div>
+
+      {/* Rubric Events Pending */}
+      {rubricPending.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <QrCode className="h-4 w-4 text-orange-600" />
+            Rubric Events Required
+            <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full">{rubricPending.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {rubricPending.map((r) => (
+              <Link key={r.id} href={`/${societySlug}/requests/content/${r.id}`}>
+                <Card className="hover:border-orange-300 border-orange-200 bg-orange-50/30 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={r.submittedBy.name} avatarUrl={r.submittedBy.avatarUrl} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{r.eventName}</p>
+                          <p className="text-xs text-muted-foreground">Deadline: {formatDate(r.deadline)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <StatusBadge status={r.status} />
+                        <Button size="sm" variant="outline" className="text-xs border-orange-300">
+                          Attach Rubric
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Room Bookings Queue */}
+      {roomPending.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <Building2 className="h-4 w-4 text-purple-600" />
+            Room Bookings
+            <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full">{roomPending.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {roomPending.map((b) => (
+              <Link key={b.id} href={`/${societySlug}/requests/room-booking/${b.id}`}>
+                <Card className="hover:border-purple-300 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={b.submittedBy.name} avatarUrl={b.submittedBy.avatarUrl} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{b.eventName}</p>
+                          <div className="text-xs text-muted-foreground flex gap-2">
+                            <span>{formatDate(b.preferredDate)}</span>
+                            <span>{b.startTime}–{b.endTime}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <StatusBadge status={b.status} />
+                        {b.assignedTo && (
+                          <UserAvatar name={b.assignedTo.name} avatarUrl={b.assignedTo.avatarUrl} size="sm" />
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Treasury — Awaiting Approval */}
+      {treasuryApproving.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <Wallet className="h-4 w-4 text-green-600" />
+            Treasury — Awaiting Approval
+            <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">{treasuryApproving.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {treasuryApproving.map((t) => {
+              const amount = Number(t.amount);
+              const needed = treasuryApprovalsNeeded(amount);
+              const approved = t.approvals.length;
+              return (
+                <Link key={t.id} href={`/${societySlug}/requests/treasury/${t.id}`}>
+                  <Card className="hover:border-green-300 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <UserAvatar name={t.submittedBy.name} avatarUrl={t.submittedBy.avatarUrl} size="sm" />
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{t.description}</p>
+                            <div className="text-xs text-muted-foreground flex gap-2 items-center mt-0.5">
+                              <span className="font-medium text-green-700">{formatCurrency(amount)}</span>
+                              <span>·</span>
+                              <span>{t.locationSupplier}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: needed }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={`h-5 w-5 rounded-full flex items-center justify-center ${
+                                  i < approved ? "bg-green-100" : "bg-gray-100"
+                                }`}
+                              >
+                                {i < approved ? (
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                ) : (
+                                  <span className="text-[8px] text-gray-400">○</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <Button size="sm" className="text-xs">Approve</Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Treasury — Pending Reimbursement */}
+      {reimbursementPending.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <Banknote className="h-4 w-4 text-emerald-700" />
+            Pending Reimbursement
+            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">{reimbursementPending.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {reimbursementPending.map((t) => {
+              const amount = Number(t.amount);
+              return (
+                <Card key={t.id} className="border-emerald-200 bg-emerald-50/30">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={t.submittedBy.name} avatarUrl={t.submittedBy.avatarUrl} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{t.description}</p>
+                          <div className="text-xs text-muted-foreground flex flex-col gap-0.5 mt-0.5">
+                            <div className="flex gap-2 items-center">
+                              <span className="font-medium text-emerald-700">{formatCurrency(amount)}</span>
+                              <span>·</span>
+                              <span>{t.submittedBy.name}</span>
+                            </div>
+                            {t.bankAccount && (
+                              <span>
+                                BSB {t.bankAccount.bsb} · Acct {t.bankAccount.accountNumber} ({t.bankAccount.accountName})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Link href={`/${societySlug}/requests/treasury/${t.id}`}>
+                          <Button size="sm" variant="outline" className="text-xs">View</Button>
+                        </Link>
+                        <MarkReimbursedButton societySlug={societySlug} requestId={t.id} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {totalPending === 0 && (
+        <Card>
+          <CardContent className="py-12 flex flex-col items-center gap-3">
+            <CheckCircle className="h-8 w-8 text-green-500" />
+            <p className="font-medium text-gray-700">All clear!</p>
+            <p className="text-sm text-muted-foreground">No items require executive action.</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

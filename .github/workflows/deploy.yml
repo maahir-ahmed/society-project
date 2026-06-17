@@ -1,0 +1,30 @@
+# Self-hosted runner on the mini PC. push to main -> prod, push to dev -> dev.
+name: Deploy
+on:
+  push:
+    branches: [main, dev]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select stack
+        id: stack
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "project=rubric_prod" >> "$GITHUB_OUTPUT"
+            echo "envfile=deploy/.env.prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "project=rubric_dev" >> "$GITHUB_OUTPUT"
+            echo "envfile=deploy/.env.dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        run: |
+          docker network inspect edge >/dev/null 2>&1 || docker network create edge
+          docker compose --env-file ${{ steps.stack.outputs.envfile }} \
+            -p ${{ steps.stack.outputs.project }} \
+            -f deploy/docker-compose.yml up -d --build
+          docker image prune -f
