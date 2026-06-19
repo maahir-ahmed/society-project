@@ -23,7 +23,7 @@ services:
   # ponytail: db push, switch to `prisma migrate deploy` once you add a migrations history.
   migrate:
     build: { context: .., dockerfile: Dockerfile }
-    command: sh -c "npx prisma db push --skip-generate"
+    command: sh -c "npx prisma db push"
     environment:
       DATABASE_URL: postgresql://society_user:${DB_PASSWORD}@db:5432/society_platform?schema=public
     depends_on:
