@@ -41,12 +41,14 @@ export default auth((req) => {
       return NextResponse.redirect(cleanUrl);
     }
 
-    if (!isRootPath(pathname)) {
+    if (!isRootPath(pathname) && pathname !== "/") {
       // Rewrite clean path → /slug/path (internal, transparent to browser)
       const rewritten = new URL(`${slugPrefix}${pathname}`, req.url);
       rewritten.search = req.nextUrl.search;
       return NextResponse.rewrite(rewritten);
     }
+    // Bare "/" falls through to app/page.tsx, which redirects to /dashboard.
+    // (Rewriting "/" → "/slug/" trailing-slash-normalizes to "/slug" and loops.)
   }
 
   return NextResponse.next();

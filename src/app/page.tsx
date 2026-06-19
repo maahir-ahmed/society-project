@@ -6,11 +6,13 @@ export default async function RootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  // In single-society mode the middleware rewrites / → /slug/ already,
-  // but if reached directly, honour the env var.
+  // Single-society mode: redirect to the clean /dashboard. The middleware rewrites
+  // /dashboard → /slug/dashboard internally, so the browser URL stays slug-free.
+  // (Redirecting to /slug/dashboard here would bounce off the middleware's clean-URL
+  // redirect and loop.)
   const envSlug = process.env.SOCIETY_SLUG;
   if (envSlug) {
-    redirect(`/${envSlug}/dashboard`);
+    redirect("/dashboard");
   }
 
   // Multi-society mode: redirect to the user's first active society
