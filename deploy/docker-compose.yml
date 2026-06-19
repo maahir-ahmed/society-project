@@ -34,6 +34,19 @@ services:
     networks: [internal]
     restart: "no"
 
+  # One-off seed. Built from the `builder` stage (has tsx + full deps the runtime image lacks).
+  # Run on demand:  docker compose ... --profile seed run --rm seed
+  seed:
+    build: { context: .., dockerfile: Dockerfile, target: builder }
+    command: sh -c "npx tsx prisma/seed.ts"
+    environment:
+      DATABASE_URL: postgresql://society_user:${DB_PASSWORD}@db:5432/society_platform?schema=public
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [internal]
+    restart: "no"
+    profiles: ["seed"]
+
   app:
     build: { context: .., dockerfile: Dockerfile }
     container_name: ${STACK}_app
