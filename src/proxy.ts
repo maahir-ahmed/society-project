@@ -33,12 +33,12 @@ export default auth((req) => {
   if (SOCIETY_SLUG && !isPublic) {
     const slugPrefix = `/${SOCIETY_SLUG}`;
 
-    if (pathname.startsWith(slugPrefix + "/") || pathname === slugPrefix) {
-      // Browser requested /slug/... — redirect to clean URL so address bar stays clean
-      const cleanPath = pathname === slugPrefix ? "/" : pathname.slice(slugPrefix.length);
-      const cleanUrl = new URL(cleanPath || "/", req.url);
-      cleanUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(cleanUrl);
+    // Already slug-prefixed — either a real /slug/... request OR the internal rewrite
+    // re-entering middleware (which happens in the standalone production server). Render
+    // as-is. Do NOT redirect to a clean URL here: combined with the rewrite below it
+    // creates an infinite /dashboard ⇄ /slug/dashboard loop.
+    if (pathname === slugPrefix || pathname.startsWith(slugPrefix + "/")) {
+      return NextResponse.next();
     }
 
     if (!isRootPath(pathname) && pathname !== "/") {
@@ -48,7 +48,6 @@ export default auth((req) => {
       return NextResponse.rewrite(rewritten);
     }
     // Bare "/" falls through to app/page.tsx, which redirects to /dashboard.
-    // (Rewriting "/" → "/slug/" trailing-slash-normalizes to "/slug" and loops.)
   }
 
   return NextResponse.next();
