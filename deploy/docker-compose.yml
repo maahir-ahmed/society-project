@@ -19,21 +19,6 @@ services:
       retries: 5
     networks: [internal]
 
-  # Sync schema to the DB on every deploy. This project uses `db push` (no migrations dir).
-  # ponytail: db push, switch to `prisma migrate deploy` once you add a migrations history.
-  migrate:
-    build: { context: .., dockerfile: Dockerfile }
-    # $$ escapes compose interpolation so sh expands the container's runtime DATABASE_URL.
-    # ponytail: --accept-data-loss keeps unattended deploys from hanging on a prompt;
-    # ceiling = a destructive schema change applies silently. Add migrations to remove it.
-    command: sh -c "npx prisma db push --schema=prisma/schema.prisma --url \"$$DATABASE_URL\" --accept-data-loss"
-    environment:
-      DATABASE_URL: postgresql://society_user:${DB_PASSWORD}@db:5432/society_platform?schema=public
-    depends_on:
-      db: { condition: service_healthy }
-    networks: [internal]
-    restart: "no"
-
   # One-off seed. Built from the `builder` stage (has tsx + full deps the runtime image lacks).
   # Run on demand:  docker compose ... --profile seed run --rm seed
   seed:
@@ -51,6 +36,10 @@ services:
     build: { context: .., dockerfile: Dockerfile }
     container_name: ${STACK}_app
     restart: unless-stopped
+    # Sync schema (idempotent) then start the server — no separate migrate container to clean up.
+    # $$ escapes compose interpolation so sh expands the runtime DATABASE_URL.
+    # ponytail: db push + --accept-data-loss; ceiling = destructive schema change applies silently.
+    command: sh -c "npx prisma db push --schema=prisma/schema.prisma --url \"$$DATABASE_URL\" --accept-data-loss && node server.js"
     ports:
       - "${APP_PORT}:3000"   # cloudflared hits host.docker.internal:${APP_PORT}
     environment:
@@ -70,7 +59,6 @@ services:
       - uploads_data:/app/uploads
     depends_on:
       db: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
     networks: [internal]
 
 volumes:

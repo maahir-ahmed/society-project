@@ -36,10 +36,10 @@ Two stacks behind your existing cloudflared tunnel:
    docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml up -d --build
    ```
 
-7. **Seed** the first admin (once per stack):
+7. **Seed** the first admin (once per stack). The app runs `db push` on startup, so the
+   schema already exists; this just inserts the society + admin user:
    ```bash
-   docker exec -it rubric_prod_app node -e "require('child_process')"  # or run prisma seed:
-   docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml run --rm migrate npx tsx prisma/seed.ts
+   docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml --profile seed run --rm seed
    ```
 
 ## Backups
