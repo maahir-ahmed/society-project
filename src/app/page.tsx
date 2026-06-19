@@ -6,12 +6,14 @@ export default async function RootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  // Single-society mode: redirect to the clean /dashboard. The middleware rewrites
-  // /dashboard → /slug/dashboard internally, so the browser URL stays slug-free.
-  // (Redirecting to /slug/dashboard here would bounce off the middleware's clean-URL
-  // redirect and loop.)
+  // Single-society mode: go to the clean /dashboard (middleware rewrites it to
+  // /slug/dashboard internally). Guard on membership using the SAME session data the
+  // dashboard checks — otherwise a member-less/stale session loops /dashboard → / → …
   const envSlug = process.env.SOCIETY_SLUG;
   if (envSlug) {
+    const hasMembership = (session.user as { memberships?: { society: { slug: string } }[] })
+      .memberships?.some((m) => m.society.slug === envSlug);
+    if (!hasMembership) redirect("/login?error=no-membership");
     redirect("/dashboard");
   }
 
