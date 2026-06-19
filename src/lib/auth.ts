@@ -7,6 +7,8 @@ import type { Role } from "@prisma/client";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Behind a reverse proxy (cloudflared) the Host header is external; trust it.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
