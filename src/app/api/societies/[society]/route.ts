@@ -17,6 +17,7 @@ const updateSchema = z.object({
   instagramUrl: z.string().url().nullable().optional(),
   discordUrl: z.string().url().nullable().optional(),
   linkedinUrl: z.string().url().nullable().optional(),
+  secretarialTier: z.enum(["BRONZE", "SILVER", "GOLD"]).optional(),
 }).partial();
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ society: string }> }) {

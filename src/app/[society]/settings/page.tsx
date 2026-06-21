@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Globe, Link2, Share2 } from "lucide-react";
 import { TitlesManager } from "@/components/settings/TitlesManager";
 import { RubricSettings } from "@/components/settings/RubricSettings";
+import { SECRETARIAL_ALLOWANCE } from "@/lib/printing";
 
 export default function SettingsPage() {
   const params = useParams<{ society: string }>();
@@ -73,6 +74,28 @@ export default function SettingsPage() {
               <Label htmlFor="contactEmail">Contact Email</Label>
               <Input id="contactEmail" name="contactEmail" type="email" defaultValue={society.contactEmail ?? ""} />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Secretarial Allowance</CardTitle>
+            <CardDescription>Your Arc club tier sets the printing budget for the year.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="secretarialTier">Club Tier</Label>
+            <select
+              id="secretarialTier"
+              name="secretarialTier"
+              defaultValue={society.secretarialTier ?? "BRONZE"}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {Object.entries(SECRETARIAL_ALLOWANCE).map(([tier, amount]) => (
+                <option key={tier} value={tier}>
+                  {tier.charAt(0) + tier.slice(1).toLowerCase()} — ${amount}
+                </option>
+              ))}
+            </select>
           </CardContent>
         </Card>
 

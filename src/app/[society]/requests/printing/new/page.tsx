@@ -154,7 +154,7 @@ export default function NewPrintingRequestPage() {
                 <Input id="quantity" type="number" min="1" required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pages">Pages per copy *</Label>
+                <Label htmlFor="pages">How many pages are in the document? *</Label>
                 <Input id="pages" type="number" min="1" required value={pages} onChange={(e) => setPages(e.target.value)} />
               </div>
             </div>
