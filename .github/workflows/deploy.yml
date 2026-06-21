@@ -1,4 +1,6 @@
 # Self-hosted runner on the mini PC. push to main -> prod, push to dev -> dev.
+# Deploys from the PERSISTENT clone (~/containers/society-project) which holds the
+# gitignored .env files and the named volumes — NOT the runner's throwaway checkout.
 name: Deploy
 on:
   push:
@@ -8,22 +10,21 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Select stack
-        id: stack
-        run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "project=rubric_prod" >> "$GITHUB_OUTPUT"
-            echo "envfile=deploy/.env.prod" >> "$GITHUB_OUTPUT"
-          else
-            echo "project=rubric_dev" >> "$GITHUB_OUTPUT"
-            echo "envfile=deploy/.env.dev" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Deploy
         run: |
-          docker compose --env-file ${{ steps.stack.outputs.envfile }} \
-            -p ${{ steps.stack.outputs.project }} \
+          set -euo pipefail
+          REPO="$HOME/containers/society-project"
+          BRANCH="${{ github.ref_name }}"
+          cd "$REPO"
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+
+          if [ "$BRANCH" = "main" ]; then
+            PROJECT=rubric_prod; ENVFILE=deploy/.env.prod
+          else
+            PROJECT=rubric_dev;  ENVFILE=deploy/.env.dev
+          fi
+
+          docker compose --env-file "$ENVFILE" -p "$PROJECT" \
             -f deploy/docker-compose.yml up -d --build --remove-orphans
           docker image prune -f
