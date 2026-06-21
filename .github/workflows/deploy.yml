@@ -25,5 +25,5 @@ jobs:
         run: |
           docker compose --env-file ${{ steps.stack.outputs.envfile }} \
             -p ${{ steps.stack.outputs.project }} \
-            -f deploy/docker-compose.yml up -d --build
+            -f deploy/docker-compose.yml up -d --build --remove-orphans
           docker image prune -f

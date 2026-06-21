@@ -33,7 +33,7 @@ Two stacks behind your existing cloudflared tunnel:
 
 6. **First deploy:** push to `dev` and `main`, or run manually:
    ```bash
-   docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml up -d --build
+   docker compose --env-file deploy/.env.prod -p rubric_prod -f deploy/docker-compose.yml up -d --build --remove-orphans
    ```
 
 7. **Seed** the first admin (once per stack). The app runs `db push` on startup, so the
