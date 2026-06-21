@@ -41,7 +41,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ so
   if (memErr) return memErr;
 
   try {
-    const body = updateSchema.parse(await req.json());
+    // The settings form posts every field; drop empty strings so optional/url
+    // fields are treated as "not provided" instead of failing .url() validation.
+    const raw = (await req.json()) as Record<string, unknown>;
+    for (const k of Object.keys(raw)) {
+      if (raw[k] === "") delete raw[k];
+    }
+    const body = updateSchema.parse(raw);
     const updated = await prisma.society.update({
       where: { id: membership!.societyId },
       data: body,
