@@ -9,9 +9,7 @@ import {
   Wallet,
   Users,
   Settings,
-  ChevronDown,
   Shield,
-  Bell,
   LogOut,
   Globe2,
 } from "lucide-react";

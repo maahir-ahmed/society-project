@@ -47,7 +47,6 @@ export default async function ContentRequestDetailPage({ params }: Props) {
   if (!request || request.societyId !== membership.societyId) notFound();
 
   const isExec = membership.role === "EXECUTIVE";
-  const isOwner = request.submittedById === session.user.id;
 
   const STATUSES: ContentRequestStatus[] = [
     "DRAFT", "SUBMITTED", "ASSIGNED", "IN_PROGRESS",

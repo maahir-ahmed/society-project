@@ -3,7 +3,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db";
-import type { Role } from "@prisma/client";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -77,16 +76,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
-}
-
-export function getMembershipForSociety(
-  session: any,
-  societySlug: string
-): { role: Role; societyId: string } | null {
-  const membership = session?.user?.memberships?.find(
-    (m: any) => m.society.slug === societySlug
-  );
-  return membership
-    ? { role: membership.role, societyId: membership.societyId }
-    : null;
 }

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency, timeAgo } from "@/lib/utils";
 import {
-  FileText, Building2, Wallet, Clock, CheckCircle, AlertCircle, Plus
+  FileText, Building2, Wallet, AlertCircle, Plus
 } from "lucide-react";
 
 interface Props {

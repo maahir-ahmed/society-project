@@ -8,7 +8,7 @@ const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB ?? 10) * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "application/pdf", "image/webp"];
 
 export async function POST(req: NextRequest) {
-  const { session, error: authErr } = await requireAuth();
+  const { error: authErr } = await requireAuth();
   if (authErr) return authErr;
 
   const formData = await req.formData();

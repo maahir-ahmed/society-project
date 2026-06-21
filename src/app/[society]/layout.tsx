@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { cn } from "@/lib/utils";
 
 interface SocietyLayoutProps {
   children: React.ReactNode;

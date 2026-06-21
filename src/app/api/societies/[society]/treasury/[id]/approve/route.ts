@@ -79,7 +79,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Par
   if (authErr) return authErr;
 
   const { society, id } = await params;
-  const { membership, error: memErr } = await requireMembership(session!.user.id, society, "EXECUTIVE");
+  const { error: memErr } = await requireMembership(session!.user.id, society, "EXECUTIVE");
   if (memErr) return memErr;
 
   const approval = await prisma.treasuryApproval.findUnique({
