@@ -17,8 +17,9 @@ async function main() {
       name: "UNSW Security Society",
       slug: "secsoc",
       description: "The premier cybersecurity and information security society at UNSW Sydney.",
-      primaryColor: "#1a1a2e",
-      secondaryColor: "#0f3460",
+      logoUrl: "/secsoc-logo.png",
+      primaryColor: "#00ffd1",
+      secondaryColor: "#007869",
       contactEmail: "contact@secsoc.unsw.edu.au",
     },
   });

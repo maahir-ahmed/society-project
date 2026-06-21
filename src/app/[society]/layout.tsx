@@ -24,6 +24,7 @@ export default function SocietyLayout({ children }: SocietyLayoutProps) {
   const societyName = membership?.society?.name ?? params.society;
   const userRole = membership?.role ?? "SUBCOMMITTEE";
   const primaryColor = membership?.society?.primaryColor ?? "#0052CC";
+  const societyLogo = membership?.society?.logoUrl ?? null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -35,6 +36,7 @@ export default function SocietyLayout({ children }: SocietyLayoutProps) {
           societySlug={params.society}
           userRole={userRole}
           primaryColor={primaryColor}
+          societyLogo={societyLogo}
         />
       </div>
 
@@ -49,6 +51,7 @@ export default function SocietyLayout({ children }: SocietyLayoutProps) {
               societySlug={params.society}
               userRole={userRole}
               primaryColor={primaryColor}
+              societyLogo={societyLogo}
             />
           </div>
         </div>

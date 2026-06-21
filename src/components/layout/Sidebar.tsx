@@ -76,9 +76,10 @@ interface SidebarProps {
   societySlug: string;
   userRole: string;
   primaryColor?: string;
+  societyLogo?: string | null;
 }
 
-export function Sidebar({ user, societyName, societySlug, userRole, primaryColor = "#0052CC" }: SidebarProps) {
+export function Sidebar({ user, societyName, societySlug, userRole, primaryColor = "#0052CC", societyLogo }: SidebarProps) {
   const pathname = usePathname();
   const isExecutive = userRole === "EXECUTIVE";
   const prefix = `/${societySlug}`;
@@ -94,12 +95,17 @@ export function Sidebar({ user, societyName, societySlug, userRole, primaryColor
     <aside className="flex h-full w-64 flex-col bg-gray-900 text-white">
       {/* Society Header */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-700">
-        <div
-          className="h-8 w-8 rounded-md flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {societyName[0]}
-        </div>
+        {societyLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={societyLogo} alt={societyName} className="h-9 w-9 object-contain flex-shrink-0" />
+        ) : (
+          <div
+            className="h-8 w-8 rounded-md flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {societyName[0]}
+          </div>
+        )}
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate">{societyName}</p>
           <p className="text-xs text-gray-400 capitalize">{userRole.toLowerCase()}</p>
