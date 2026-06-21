@@ -54,6 +54,18 @@ enum PreferredLocation {
   OTHER
 }
 
+enum PrintingStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum SecretarialTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
 enum NotificationType {
   ASSIGNMENT
   APPROVAL_REQUIRED
@@ -97,6 +109,7 @@ model Society {
   rubricSessionId      String?
   rubricSocietyId      String?
   rubricUnionSessionId String?
+  secretarialTier      SecretarialTier @default(BRONZE)
   createdAt            DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -106,6 +119,7 @@ model Society {
   contentRequests  ContentRequest[]
   roomBookings     RoomBooking[]
   treasuryRequests TreasuryRequest[]
+  printingRequests PrintingRequest[]
   announcements    Announcement[]
   auditLogs        AuditLog[]
 }
@@ -136,6 +150,7 @@ model User {
   assignedRooms     RoomBooking[]        @relation("RoomBookingAssignee")
   treasuryRequests  TreasuryRequest[]    @relation("TreasurySubmitter")
   treasuryApprovals TreasuryApproval[]
+  printingRequests  PrintingRequest[]    @relation("PrintingSubmitter")
   bankAccounts      BankAccount[]
   auditLogs         AuditLog[]
 }
@@ -329,6 +344,37 @@ model TreasuryAttachment {
   uploadedAt        DateTime @default(now())
 
   treasuryRequest TreasuryRequest @relation(fields: [treasuryRequestId], references: [id], onDelete: Cascade)
+}
+
+model PrintingRequest {
+  id              String         @id @default(cuid())
+  societyId       String
+  submittedById   String
+  clubName        String
+  contactName     String
+  contactEmail    String
+  contactPhone    String
+  pickupAt        DateTime
+  quantity        Int
+  pages           Int
+  paperSize       String         // "A4" | "A3"
+  sided           String         // "SINGLE" | "DOUBLE_SHORT" | "DOUBLE_LONG"
+  colour          String         // "BW" | "COLOUR"
+  fileUrl         String
+  fileName        String
+  additionalDetails String?      @db.Text
+  cost            Decimal        @db.Decimal(10, 2)
+  status          PrintingStatus @default(SUBMITTED)
+  decidedById     String?
+  decidedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  society     Society @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  submittedBy User    @relation("PrintingSubmitter", fields: [submittedById], references: [id])
+
+  @@index([societyId])
+  @@index([status])
 }
 
 model BankAccount {

@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/shared/UserAvatar";
 import { MarkReimbursedButton } from "@/components/requests/MarkReimbursedButton";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { treasuryApprovalsNeeded } from "@/lib/permissions";
-import { Shield, QrCode, Building2, Wallet, Banknote, CheckCircle } from "lucide-react";
+import { Shield, QrCode, Building2, Wallet, Banknote, CheckCircle, Printer } from "lucide-react";
 
 interface Props {
   params: Promise<{ society: string }>;
@@ -27,7 +27,7 @@ export default async function ExecutiveQueuePage({ params }: Props) {
 
   const societyId = membership.societyId;
 
-  const [rubricPending, roomPending, treasuryApproving, reimbursementPending] = await Promise.all([
+  const [rubricPending, roomPending, treasuryApproving, reimbursementPending, printingPending] = await Promise.all([
     prisma.contentRequest.findMany({
       where: { societyId, rubricRequired: true, rubricEventLink: null, status: { notIn: ["CANCELLED", "COMPLETED"] } },
       include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
@@ -57,10 +57,16 @@ export default async function ExecutiveQueuePage({ params }: Props) {
       },
       orderBy: { updatedAt: "asc" },
     }),
+    prisma.printingRequest.findMany({
+      where: { societyId, status: "SUBMITTED" },
+      include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
+      orderBy: { pickupAt: "asc" },
+    }),
   ]);
 
   const totalPending =
-    rubricPending.length + roomPending.length + treasuryApproving.length + reimbursementPending.length;
+    rubricPending.length + roomPending.length + treasuryApproving.length +
+    reimbursementPending.length + printingPending.length;
 
   return (
     <div className="space-y-6">
@@ -205,6 +211,44 @@ export default async function ExecutiveQueuePage({ params }: Props) {
                 </Link>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* Printing — Awaiting Approval */}
+      {printingPending.length > 0 && (
+        <section>
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <Printer className="h-4 w-4 text-blue-600" />
+            Printing — Awaiting Approval
+            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{printingPending.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {printingPending.map((p) => (
+              <Link key={p.id} href={`/${societySlug}/requests/printing/${p.id}`}>
+                <Card className="hover:border-blue-300 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={p.submittedBy.name} avatarUrl={p.submittedBy.avatarUrl} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">
+                            {p.quantity}× {p.pages}pp {p.paperSize} {p.colour === "BW" ? "B&W" : "Colour"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {p.submittedBy.name} · pickup {formatDate(p.pickupAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="font-medium text-green-700">{formatCurrency(Number(p.cost))}</span>
+                        <Button size="sm" className="text-xs">Review</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
         </section>
       )}

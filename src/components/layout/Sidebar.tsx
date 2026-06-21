@@ -7,6 +7,7 @@ import {
   FileText,
   Building2,
   Wallet,
+  Printer,
   Users,
   Settings,
   Shield,
@@ -38,6 +39,11 @@ const navItems = [
     href: "/requests/treasury",
     label: "Treasury",
     icon: Wallet,
+  },
+  {
+    href: "/requests/printing",
+    label: "Printing",
+    icon: Printer,
   },
   {
     href: "/executive/queue",

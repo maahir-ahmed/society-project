@@ -5,7 +5,11 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 
 const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB ?? 10) * 1024 * 1024;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "application/pdf", "image/webp"];
+const ALLOWED_TYPES = [
+  "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireAuth();
