@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/api";
+import { hashPassword } from "@/lib/auth";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+const schema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
+});
+
+export async function PATCH(req: NextRequest) {
+  const { session, error } = await requireAuth();
+  if (error) return error;
+
+  try {
+    const data = schema.parse(await req.json());
+
+    const user = await prisma.user.findUnique({ where: { id: session!.user.id } });
+    if (!user || !user.passwordHash) {
+      return NextResponse.json({ error: "Password not set on this account" }, { status: 400 });
+    }
+
+    const valid = await bcrypt.compare(data.currentPassword, user.passwordHash);
+    if (!valid) {
+      return NextResponse.json({ error: "Current password is incorrect" }, { status: 403 });
+    }
+
+    const passwordHash = await hashPassword(data.newPassword);
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: err.issues[0]?.message ?? "Validation error" }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

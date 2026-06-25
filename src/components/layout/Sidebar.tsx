@@ -13,6 +13,7 @@ import {
   Shield,
   LogOut,
   Globe2,
+  UserCog,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,11 @@ const navItems = [
     label: "Settings",
     icon: Settings,
     executiveOnly: true,
+  },
+  {
+    href: "/account",
+    label: "My Account",
+    icon: UserCog,
   },
 ];
 
