@@ -27,7 +27,7 @@ export default function SocietyLayout({ children }: SocietyLayoutProps) {
   const societyLogo = membership?.society?.logoUrl ?? null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <Sidebar
@@ -64,8 +64,8 @@ export default function SocietyLayout({ children }: SocietyLayoutProps) {
           onMobileMenuToggle={() => setMobileOpen((v) => !v)}
           mobileMenuOpen={mobileOpen}
         />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto p-5 lg:p-8">
+          <div className="mx-auto max-w-[1320px]">{children}</div>
         </main>
       </div>
     </div>

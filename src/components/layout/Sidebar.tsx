@@ -100,65 +100,74 @@ export function Sidebar({ user, societyName, societySlug, userRole, primaryColor
     .slice(0, 2);
 
   return (
-    <aside className="flex h-full w-64 flex-col bg-gray-900 text-white">
+    <aside className="flex h-full w-64 flex-col bg-[#0b0b0d] text-zinc-300 border-r border-white/5">
       {/* Society Header */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-700">
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-white/5">
         {societyLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={societyLogo} alt={societyName} className="h-9 w-9 object-contain flex-shrink-0" />
+          <img src={societyLogo} alt={societyName} className="h-8 w-8 object-contain flex-shrink-0" />
         ) : (
           <div
-            className="h-8 w-8 rounded-md flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
             style={{ backgroundColor: primaryColor }}
           >
             {societyName[0]}
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{societyName}</p>
-          <p className="text-xs text-gray-400 capitalize">{userRole.toLowerCase()}</p>
+          <p className="text-sm font-semibold text-white truncate tracking-tight leading-tight">{societyName}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">{userRole.toLowerCase()}</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-        {navItems
-          .filter((item) => !item.minRole || (ROLE_RANK[userRole] ?? 0) >= ROLE_RANK[item.minRole])
-          .map((item) => {
-            const href = `${prefix}${item.href}`;
-            const active = pathname.startsWith(href);
-            return (
-              <Link
-                key={item.href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-                  active
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {item.label}
-              </Link>
-            );
-          })}
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
+        <p className="px-3 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-600">Menu</p>
+        <div className="space-y-0.5">
+          {navItems
+            .filter((item) => !item.minRole || (ROLE_RANK[userRole] ?? 0) >= ROLE_RANK[item.minRole])
+            .map((item) => {
+              const href = `${prefix}${item.href}`;
+              const active = pathname === href || pathname.startsWith(href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={href}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-white/[0.07] text-white font-medium"
+                      : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-full bg-[#00ffd1] transition-opacity",
+                      active ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <item.icon className={cn("h-[18px] w-[18px] flex-shrink-0 transition-colors", active ? "text-white" : "text-zinc-500 group-hover:text-zinc-300")} />
+                  {item.label}
+                </Link>
+              );
+            })}
+        </div>
       </nav>
 
       {/* User Footer */}
-      <div className="border-t border-gray-700 p-3">
-        <div className="flex items-center gap-3">
+      <div className="border-t border-white/5 p-3">
+        <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={user.image ?? ""} alt={user.name} />
-            <AvatarFallback className="bg-gray-600 text-white text-xs">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-white/10 text-zinc-200 text-xs font-medium">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{user.name}</p>
-            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            <p className="text-sm font-medium text-zinc-100 truncate">{user.name}</p>
+            <p className="text-xs text-zinc-500 truncate">{user.email}</p>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-gray-400 hover:text-white transition-colors flex-shrink-0"
+            className="flex-shrink-0 rounded-md p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-200 transition-colors"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />

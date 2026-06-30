@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Globe, Link2, Share2 } from "lucide-react";
 import { TitlesManager } from "@/components/settings/TitlesManager";
 import { RubricSettings } from "@/components/settings/RubricSettings";
+import { ImageUploadField } from "@/components/settings/ImageUploadField";
 import { SECRETARIAL_ALLOWANCE } from "@/lib/printing";
 
 export default function SettingsPage() {
@@ -121,13 +122,21 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input id="logoUrl" name="logoUrl" type="url" defaultValue={society.logoUrl ?? ""} placeholder="https://..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bannerUrl">Banner Image URL</Label>
-              <Input id="bannerUrl" name="bannerUrl" type="url" defaultValue={society.bannerUrl ?? ""} placeholder="https://..." />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <ImageUploadField
+                name="logoUrl"
+                label="Logo"
+                defaultValue={society.logoUrl}
+                shape="square"
+                hint="Square image (PNG with transparency works best)."
+              />
+              <ImageUploadField
+                name="bannerUrl"
+                label="Banner"
+                defaultValue={society.bannerUrl}
+                shape="wide"
+                hint="Wide image shown across the top of your page."
+              />
             </div>
           </CardContent>
         </Card>

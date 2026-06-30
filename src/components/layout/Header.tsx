@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { timeAgo } from "@/lib/utils";
 
 interface Notification {
@@ -57,7 +56,7 @@ export function Header({ societySlug, onMobileMenuToggle, mobileMenuOpen }: Head
   }
 
   return (
-    <header className="h-14 border-b bg-white flex items-center justify-between px-4 gap-4 flex-shrink-0">
+    <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-4 gap-4 flex-shrink-0">
       {/* Mobile menu toggle */}
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMobileMenuToggle}>
         {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -68,50 +67,45 @@ export function Header({ societySlug, onMobileMenuToggle, mobileMenuOpen }: Head
       {/* Notifications */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative rounded-lg text-muted-foreground hover:text-foreground">
+            <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 border-0">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </Badge>
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-card" />
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80">
-          <div className="flex items-center justify-between px-3 py-2">
+        <DropdownMenuContent align="end" className="w-80 rounded-xl p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border">
             <span className="font-semibold text-sm">Notifications</span>
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="text-xs text-blue-600 hover:underline">
+              <button onClick={markAllRead} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 Mark all read
               </button>
             )}
           </div>
-          <DropdownMenuSeparator />
           {notifications.length === 0 ? (
-            <div className="px-3 py-4 text-sm text-center text-muted-foreground">No notifications</div>
+            <div className="px-3 py-8 text-sm text-center text-muted-foreground">You&apos;re all caught up.</div>
           ) : (
             notifications.slice(0, 8).map((n) => (
-              <DropdownMenuItem key={n.id} asChild>
+              <DropdownMenuItem key={n.id} asChild className="p-0 focus:bg-accent">
                 <Link
                   href={n.link ? `/${societySlug}${n.link}` : "#"}
-                  className={`flex flex-col gap-0.5 px-3 py-2 cursor-pointer ${!n.isRead ? "bg-blue-50" : ""}`}
+                  className="flex gap-2.5 px-3.5 py-2.5 cursor-pointer border-b border-border last:border-0"
                 >
-                  <span className="text-sm font-medium leading-tight">{n.title}</span>
-                  <span className="text-xs text-muted-foreground line-clamp-1">{n.body}</span>
-                  <span className="text-xs text-muted-foreground">{timeAgo(n.createdAt)}</span>
+                  <span className={`mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${n.isRead ? "bg-transparent" : "bg-[hsl(var(--brand-deep))]"}`} />
+                  <span className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-medium leading-tight truncate">{n.title}</span>
+                    <span className="text-xs text-muted-foreground line-clamp-1">{n.body}</span>
+                    <span className="text-[11px] text-muted-foreground/70 mt-0.5">{timeAgo(n.createdAt)}</span>
+                  </span>
                 </Link>
               </DropdownMenuItem>
             ))
           )}
           {notifications.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={`/${societySlug}/notifications`} className="text-center text-sm text-blue-600 w-full justify-center">
-                  View all
-                </Link>
-              </DropdownMenuItem>
-            </>
+            <Link href={`/${societySlug}/notifications`} className="block text-center text-xs font-medium py-2.5 border-t border-border text-muted-foreground hover:text-foreground transition-colors">
+              View all notifications
+            </Link>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

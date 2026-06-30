@@ -1,25 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  /* Monochrome base — soft off-white app, true-white cards, near-black ink */
+  --background: 240 5% 98%;
+  --foreground: 240 6% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 240 6% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  --popover-foreground: 240 6% 10%;
+
+  /* Primary actions are near-black (restrained, professional) */
+  --primary: 240 6% 10%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 240 5% 95%;
+  --accent-foreground: 240 6% 10%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+
+  /* Teal — the single accent. Used for focus + active states only. */
+  --ring: 174 78% 36%;
+  --brand: 169 100% 50%;        /* #00ffd1 — for dark surfaces */
+  --brand-deep: 174 78% 31%;    /* readable teal on white */
+
   --radius: 0.5rem;
 }
 
@@ -43,6 +54,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-brand: hsl(var(--brand));
+  --color-brand-deep: hsl(var(--brand-deep));
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -50,9 +63,36 @@
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv01", "ss01";
 }
 
 * {
   border-color: hsl(var(--border));
 }
+
+/* Headings: tighter tracking reads as deliberate, not default */
+h1, h2, h3 {
+  letter-spacing: -0.018em;
+}
+
+/* Tabular figures for stats / money / IDs so columns line up */
+.tabnums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: hsl(var(--brand) / 0.25);
+}
+
+/* Quieter, thinner scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(240 5% 80%) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: hsl(240 5% 82%); border-radius: 9999px; }
+*::-webkit-scrollbar-thumb:hover { background: hsl(240 5% 72%); }

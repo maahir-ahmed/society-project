@@ -133,7 +133,7 @@ export default async function DashboardPage({ params }: Props) {
                 <Link key={r.id} href={`/${societySlug}/requests/content/${r.id}`} className="flex items-start gap-2 group">
                   <UserAvatar name={r.submittedBy.name} avatarUrl={r.submittedBy.avatarUrl} size="sm" className="mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-blue-600">{r.eventName}</p>
+                    <p className="text-sm font-medium truncate group-hover:text-foreground">{r.eventName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-muted-foreground">{formatDate(r.deadline)}</span>
@@ -165,7 +165,7 @@ export default async function DashboardPage({ params }: Props) {
                 <Link key={r.id} href={`/${societySlug}/requests/room-booking/${r.id}`} className="flex items-start gap-2 group">
                   <UserAvatar name={r.submittedBy.name} avatarUrl={r.submittedBy.avatarUrl} size="sm" className="mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-blue-600">{r.eventName}</p>
+                    <p className="text-sm font-medium truncate group-hover:text-foreground">{r.eventName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-muted-foreground">{formatDate(r.preferredDate)}</span>
@@ -197,7 +197,7 @@ export default async function DashboardPage({ params }: Props) {
                 <Link key={r.id} href={`/${societySlug}/requests/treasury/${r.id}`} className="flex items-start gap-2 group">
                   <UserAvatar name={r.submittedBy.name} avatarUrl={r.submittedBy.avatarUrl} size="sm" className="mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-blue-600">{r.description}</p>
+                    <p className="text-sm font-medium truncate group-hover:text-foreground">{r.description}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <StatusBadge status={r.status} />
                       <span className="text-xs font-medium text-green-700">{formatCurrency(Number(r.amount))}</span>

@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 interface StatsCardProps {
@@ -8,35 +7,24 @@ interface StatsCardProps {
   subtitle?: string;
   icon: LucideIcon;
   trend?: { value: number; label: string };
+  // kept for call-site compatibility; the design is intentionally monochrome
   color?: "blue" | "green" | "yellow" | "red" | "purple";
 }
 
-const colorMap = {
-  blue: "bg-blue-50 text-blue-600",
-  green: "bg-green-50 text-green-600",
-  yellow: "bg-yellow-50 text-yellow-600",
-  red: "bg-red-50 text-red-600",
-  purple: "bg-purple-50 text-purple-600",
-};
-
-export function StatsCard({ title, value, subtitle, icon: Icon, trend, color = "blue" }: StatsCardProps) {
+export function StatsCard({ title, value, subtitle, icon: Icon, trend }: StatsCardProps) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-          </div>
-          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0", colorMap[color])}>
-            <Icon className="h-5 w-5" />
-          </div>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-medium text-muted-foreground">{title}</p>
+          <Icon className="h-4 w-4 text-zinc-400" strokeWidth={2} />
         </div>
+        <p className="mt-2.5 text-[28px] leading-none font-semibold tabnums">{value}</p>
+        {subtitle && <p className="mt-1.5 text-xs text-muted-foreground">{subtitle}</p>}
         {trend && (
-          <div className="mt-3 flex items-center gap-1 text-xs">
-            <span className={trend.value >= 0 ? "text-green-600" : "text-red-600"}>
-              {trend.value >= 0 ? "+" : ""}{trend.value}%
+          <div className="mt-3 flex items-center gap-1.5 text-xs">
+            <span className={trend.value >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
+              {trend.value >= 0 ? "↑" : "↓"} {Math.abs(trend.value)}%
             </span>
             <span className="text-muted-foreground">{trend.label}</span>
           </div>

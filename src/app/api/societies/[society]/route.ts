@@ -10,8 +10,9 @@ const updateSchema = z.object({
   contactEmail: z.string().email().nullable().optional(),
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   secondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  logoUrl: z.string().url().nullable().optional(),
-  bannerUrl: z.string().url().nullable().optional(),
+  // Accept relative upload paths (/uploads/…) as well as full URLs.
+  logoUrl: z.string().nullable().optional(),
+  bannerUrl: z.string().nullable().optional(),
   website: z.string().url().nullable().optional(),
   facebookUrl: z.string().url().nullable().optional(),
   instagramUrl: z.string().url().nullable().optional(),
@@ -41,11 +42,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ so
   if (memErr) return memErr;
 
   try {
-    // The settings form posts every field; drop empty strings so optional/url
-    // fields are treated as "not provided" instead of failing .url() validation.
+    // The settings form posts every field. Empty strings on the always-present
+    // required fields (name, colours, tier) are dropped; on optional/nullable
+    // fields an empty string means "clear it" → null (so e.g. removing the logo works).
+    const ALWAYS_PRESENT = new Set(["name", "primaryColor", "secondaryColor", "secretarialTier"]);
     const raw = (await req.json()) as Record<string, unknown>;
     for (const k of Object.keys(raw)) {
-      if (raw[k] === "") delete raw[k];
+      if (raw[k] === "") {
+        if (ALWAYS_PRESENT.has(k)) delete raw[k];
+        else raw[k] = null;
+      }
     }
     const body = updateSchema.parse(raw);
     const updated = await prisma.society.update({
