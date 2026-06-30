@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
   const { society } = await params;
   const { membership, error: memErr } = await requireMembership(session!.user.id, society);
   if (memErr) return memErr;
-  if (membership!.role !== "EXECUTIVE") return NextResponse.json({ error: "Exec only" }, { status: 403 });
+  if (membership!.role === "SUBCOMMITTEE") return NextResponse.json({ error: "Not authorised" }, { status: 403 });
 
   const parsed = body.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });

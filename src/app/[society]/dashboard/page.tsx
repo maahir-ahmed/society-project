@@ -7,9 +7,9 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatCurrency, timeAgo } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import {
-  FileText, Building2, Wallet, AlertCircle, Plus
+  FileText, Building2, Wallet, AlertCircle, Plus, Printer
 } from "lucide-react";
 
 interface Props {
@@ -37,7 +37,6 @@ export default async function DashboardPage({ params }: Props) {
     recentContent,
     recentRoom,
     recentTreasury,
-    announcements,
   ] = await Promise.all([
     prisma.contentRequest.count({
       where: { societyId, status: { notIn: ["COMPLETED", "CANCELLED"] } },
@@ -66,11 +65,6 @@ export default async function DashboardPage({ params }: Props) {
       orderBy: { updatedAt: "desc" },
       take: 5,
     }),
-    prisma.announcement.findMany({
-      where: { societyId },
-      orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
-      take: 3,
-    }),
   ]);
 
   const pendingTreasuryApprovals = isExec
@@ -88,10 +82,15 @@ export default async function DashboardPage({ params }: Props) {
             Welcome back, {session.user.name?.split(" ")[0]}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button asChild size="sm" variant="outline">
             <Link href={`/${societySlug}/requests/content/new`}>
               <Plus className="h-4 w-4 mr-1" /> Content Request
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/${societySlug}/requests/printing/new`}>
+              <Printer className="h-4 w-4 mr-1" /> Printing Request
             </Link>
           </Button>
           <Button asChild size="sm">
@@ -111,27 +110,6 @@ export default async function DashboardPage({ params }: Props) {
           <StatsCard title="Awaiting Your Approval" value={pendingTreasuryApprovals} icon={AlertCircle} color="yellow" />
         )}
       </div>
-
-      {/* Announcements */}
-      {announcements.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Announcements</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {announcements.map((a) => (
-              <div key={a.id} className="flex gap-2">
-                {a.isPinned && <span className="text-yellow-500 text-sm mt-0.5">📌</span>}
-                <div>
-                  <p className="text-sm font-medium">{a.title}</p>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{a.content}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(a.createdAt)}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

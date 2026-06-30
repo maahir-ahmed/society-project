@@ -50,24 +50,25 @@ const navItems = [
     href: "/executive/queue",
     label: "Exec Queue",
     icon: Shield,
-    executiveOnly: true,
+    minRole: "EXECUTIVE" as const,
   },
   {
     href: "/members",
     label: "Members",
     icon: Users,
+    minRole: "EXECUTIVE" as const,
   },
   {
     href: "/rubric",
     label: "Rubric Portal",
     icon: Globe2,
-    executiveOnly: true,
+    minRole: "DIRECTOR" as const, // exec + director (directors see the Events tab only)
   },
   {
     href: "/settings",
     label: "Settings",
     icon: Settings,
-    executiveOnly: true,
+    minRole: "EXECUTIVE" as const,
   },
   {
     href: "/account",
@@ -75,6 +76,8 @@ const navItems = [
     icon: UserCog,
   },
 ];
+
+const ROLE_RANK: Record<string, number> = { EXECUTIVE: 3, DIRECTOR: 2, SUBCOMMITTEE: 1 };
 
 interface SidebarProps {
   user: SessionUser;
@@ -87,7 +90,6 @@ interface SidebarProps {
 
 export function Sidebar({ user, societyName, societySlug, userRole, primaryColor = "#0052CC", societyLogo }: SidebarProps) {
   const pathname = usePathname();
-  const isExecutive = userRole === "EXECUTIVE";
   const prefix = `/${societySlug}`;
 
   const initials = user.name
@@ -121,7 +123,7 @@ export function Sidebar({ user, societyName, societySlug, userRole, primaryColor
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
         {navItems
-          .filter((item) => !item.executiveOnly || isExecutive)
+          .filter((item) => !item.minRole || (ROLE_RANK[userRole] ?? 0) >= ROLE_RANK[item.minRole])
           .map((item) => {
             const href = `${prefix}${item.href}`;
             const active = pathname.startsWith(href);

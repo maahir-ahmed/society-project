@@ -25,6 +25,8 @@ export default async function MembersPage({ params }: Props) {
     where: { userId: session.user.id, society: { slug: societySlug }, isActive: true },
   });
   if (!membership) redirect("/");
+  // Members directory is exec-only.
+  if (membership.role !== "EXECUTIVE") redirect(`/${societySlug}/dashboard`);
 
   const isExec = membership.role === "EXECUTIVE";
 

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Settings } from "lucide-react";
 
@@ -21,7 +23,22 @@ interface RubricShellProps {
 export function RubricShell({ children }: RubricShellProps) {
   const pathname = usePathname();
   const params = useParams<{ society: string }>();
+  const router = useRouter();
+  const { data: session } = useSession();
   const base = `/${params.society}/rubric`;
+
+  const role = (session?.user as { memberships?: { society: { slug: string }; role: string }[] } | undefined)
+    ?.memberships?.find((m) => m.society.slug === params.society)?.role;
+  const isExec = role === "EXECUTIVE";
+
+  // Directors are limited to the Events tab; bounce them off any other rubric page.
+  useEffect(() => {
+    if (role && role !== "EXECUTIVE" && !pathname.startsWith(`${base}/events`)) {
+      router.replace(`${base}/events`);
+    }
+  }, [role, pathname, base, router]);
+
+  const tabs = isExec ? TABS : TABS.filter((t) => t.href === "/events");
 
   return (
     <div className="space-y-6">
@@ -37,17 +54,19 @@ export function RubricShell({ children }: RubricShellProps) {
             </a>
           </p>
         </div>
-        <Link
-          href={`/${params.society}/settings`}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Settings className="h-3.5 w-3.5" /> Configure
-        </Link>
+        {isExec && (
+          <Link
+            href={`/${params.society}/settings`}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Settings className="h-3.5 w-3.5" /> Configure
+          </Link>
+        )}
       </div>
 
       {/* Tab bar */}
       <div className="border-b flex gap-1 overflow-x-auto">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const href = `${base}${tab.href}`;
           const active = tab.href === ""
             ? pathname === base || pathname === `${base}/`

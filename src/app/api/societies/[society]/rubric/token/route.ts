@@ -10,7 +10,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ soc
   const { society } = await params;
   const { membership, error: memErr } = await requireMembership(session!.user.id, society);
   if (memErr) return memErr;
-  if (membership!.role !== "EXECUTIVE") return NextResponse.json({ error: "Exec only" }, { status: 403 });
+  // Execs + directors (directors are limited to the Events tab in the UI).
+  if (membership!.role === "SUBCOMMITTEE") return NextResponse.json({ error: "Not authorised" }, { status: 403 });
 
   const creds = await getRubricCredentials(membership!.societyId);
   if (!creds) return NextResponse.json({ error: "not_configured" }, { status: 400 });
