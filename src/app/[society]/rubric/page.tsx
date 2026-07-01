@@ -67,7 +67,7 @@ export default function RubricOverviewPage() {
   useEffect(() => {
     rubric.getToken().then(() => {
       return Promise.allSettled([
-        rubric.call({ type: "getSocietyPortalMembershipHomePage" }),
+        rubric.call({ type: "getSocietyPortalMembershipList", viewFilter: "active" }),
         rubric.call({ type: "getSocietyPortalTicketingHomePage" }),
         rubric.call({ type: "getSocietyPortalSettlementList" }),
         rubric.call({ type: "getSocietyTeamMembers", complete: true }),
@@ -105,7 +105,8 @@ export default function RubricOverviewPage() {
     </RubricShell>
   );
 
-  const activeMembers = (data?.membership as Record<string, unknown> | null)?.active_count as number | undefined;
+  const activeList = ((data?.membership as Record<string, unknown> | null)?.allMemberships as unknown[] | undefined);
+  const activeMembers = activeList?.length || undefined;
 
   const events = flattenEvents(data?.ticketing ?? null);
   const totalEvents = events.length || undefined;
