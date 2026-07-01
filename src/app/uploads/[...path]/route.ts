@@ -1,0 +1,39 @@
+import { NextRequest } from "next/server";
+import { readFile } from "fs/promises";
+import { join, normalize } from "path";
+
+// Uploaded files live in process.cwd()/uploads (a mounted volume in prod).
+// Next only serves /public statically, so this handler serves /uploads/* itself.
+const MIME: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  // Join + normalise, then reject any traversal outside the uploads dir.
+  const safe = normalize(path.join("/")).replace(/^(\.\.(\/|\\|$))+/, "");
+  if (safe.includes("..") || safe.startsWith("/")) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  try {
+    const data = await readFile(join(process.cwd(), "uploads", safe));
+    const ext = safe.split(".").pop()?.toLowerCase() ?? "";
+    return new Response(new Uint8Array(data), {
+      headers: {
+        "Content-Type": MIME[ext] ?? "application/octet-stream",
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+}
