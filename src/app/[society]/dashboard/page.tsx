@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { RubricActiveMembersCard } from "@/components/dashboard/RubricActiveMembersCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,7 @@ export default async function DashboardPage({ params }: Props) {
 
   const societyId = membership.societyId;
   const isExec = membership.role === "EXECUTIVE";
+  const canSeeRubric = isExec || membership.role === "DIRECTOR";
 
   const [
     contentPending,
@@ -103,6 +105,7 @@ export default async function DashboardPage({ params }: Props) {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {canSeeRubric && <RubricActiveMembersCard societySlug={societySlug} />}
         <StatsCard title="Open Content Requests" value={contentPending} icon={FileText} color="blue" />
         <StatsCard title="Pending Room Bookings" value={roomPending} icon={Building2} color="purple" />
         <StatsCard title="Active Reimbursements" value={treasuryPending} icon={Wallet} color="green" />
