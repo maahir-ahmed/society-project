@@ -18,7 +18,6 @@ export function RubricForm({ requestId, societySlug }: { requestId: string; soci
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         rubricEventLink: fd.get("rubricEventLink"),
-        rubricQrCodeUrl: fd.get("rubricQrCodeUrl") || null,
       }),
     });
     setSaving(false);
@@ -39,12 +38,7 @@ export function RubricForm({ requestId, societySlug }: { requestId: string; soci
         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
         required
       />
-      <input
-        name="rubricQrCodeUrl"
-        type="url"
-        placeholder="QR code image URL (optional)"
-        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-      />
+      <p className="text-xs text-muted-foreground">A QR code is generated automatically from this link.</p>
       <Button type="submit" size="sm" className="w-full" disabled={saving}>
         {saving ? "Attaching…" : "Attach Rubric Event"}
       </Button>

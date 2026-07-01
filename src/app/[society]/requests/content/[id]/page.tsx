@@ -10,6 +10,7 @@ import { ThreadView } from "@/components/requests/ThreadView";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
 import { MarketingContentPanel } from "@/components/requests/MarketingContentPanel";
 import { RubricForm } from "./RubricForm";
+import { RubricQrCode } from "@/components/requests/RubricQrCode";
 import { SubmitToRubricDialog } from "@/components/requests/SubmitToRubricDialog";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ArrowLeft, Calendar, MapPin, Clock, QrCode, ExternalLink, Send, Pencil } from "lucide-react";
@@ -206,12 +207,10 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                     <a href={request.rubricEventLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
                       <ExternalLink className="h-4 w-4" /> View Rubric Event
                     </a>
-                    {request.rubricQrCodeUrl && (
-                      <div>
-                        <p className="text-sm font-medium mb-2">QR Code</p>
-                        <img src={request.rubricQrCodeUrl} alt="Rubric QR Code" className="h-32 w-32 object-contain border rounded" />
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-sm font-medium mb-2">QR Code</p>
+                      <RubricQrCode value={request.rubricEventLink} />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">

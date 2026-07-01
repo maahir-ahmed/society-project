@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { readFile } from "fs/promises";
 import { join, normalize } from "path";
+import { requireAuth } from "@/lib/api";
 
 // Uploaded files live in process.cwd()/uploads (a mounted volume in prod).
 // Next only serves /public statically, so this handler serves /uploads/* itself.
@@ -17,6 +18,11 @@ const MIME: Record<string, string> = {
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  // Uploaded files (invoices, receipts, docs) require a logged-in user.
+  // Same-origin <img>/<a> requests carry the session cookie automatically.
+  const { error } = await requireAuth();
+  if (error) return error;
+
   const { path } = await params;
   // Join + normalise, then reject any traversal outside the uploads dir.
   const safe = normalize(path.join("/")).replace(/^(\.\.(\/|\\|$))+/, "");

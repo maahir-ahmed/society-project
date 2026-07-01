@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { ThreadView } from "@/components/requests/ThreadView";
 import { TreasuryApprovalPanel } from "@/components/requests/TreasuryApprovalPanel";
+import { EditTreasuryClaim } from "@/components/requests/EditTreasuryClaim";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils";
 import { treasuryApprovalsNeeded, treasuryNeedsTreasurer, isTreasuryApproved } from "@/lib/permissions";
@@ -56,6 +57,8 @@ export default async function TreasuryDetailPage({ params }: Props) {
   if (!request || request.societyId !== membership.societyId) notFound();
 
   const isExec = membership.role === "EXECUTIVE";
+  const isOwner = request.submittedById === session.user.id;
+  const canEdit = isExec || (isOwner && ["DRAFT", "AWAITING_APPROVAL"].includes(request.status));
   const amount = Number(request.amount);
   const neededApprovals = treasuryApprovalsNeeded(amount);
   const needsTreasurer = treasuryNeedsTreasurer(amount);
@@ -79,6 +82,20 @@ export default async function TreasuryDetailPage({ params }: Props) {
             Submitted by {request.submittedBy.name} · {formatDateTime(request.createdAt)}
           </p>
         </div>
+        {canEdit && (
+          <EditTreasuryClaim
+            societySlug={societySlug}
+            requestId={request.id}
+            initial={{
+              description: request.description,
+              amount,
+              expenseDate: request.expenseDate.toISOString(),
+              locationSupplier: request.locationSupplier,
+              contactEmail: request.contactEmail,
+            }}
+            receipts={request.receipts.map((r) => ({ id: r.id, fileName: r.fileName, fileUrl: r.fileUrl }))}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
