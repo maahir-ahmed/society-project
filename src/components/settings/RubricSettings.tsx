@@ -60,7 +60,7 @@ export function RubricSettings({ societySlug }: RubricSettingsProps) {
     setTesting(true);
     try {
       // Call Rubric directly from the browser — session is IP-bound so server-side testing doesn't work
-      await rubric.call({ type: "getClubAffiliationStatus" });
+      await rubric.call({ type: "getSocietyPortalMembershipHomePage" });
       toast.success("Connected to Rubric successfully! Your session is working.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Connection failed";

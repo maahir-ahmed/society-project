@@ -12,7 +12,7 @@ import { MarketingContentPanel } from "@/components/requests/MarketingContentPan
 import { RubricForm } from "./RubricForm";
 import { SubmitToRubricDialog } from "@/components/requests/SubmitToRubricDialog";
 import { formatDate, formatDateTime } from "@/lib/utils";
-import { ArrowLeft, Calendar, MapPin, Clock, QrCode, ExternalLink, Send } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, QrCode, ExternalLink, Send, Pencil } from "lucide-react";
 import type { ContentRequestStatus } from "@prisma/client";
 
 interface Props {
@@ -50,11 +50,14 @@ export default async function ContentRequestDetailPage({ params }: Props) {
   const isExec = membership.role === "EXECUTIVE";
   const isMarketing = isExec || (membership.title?.toLowerCase().includes("marketing") ?? false);
 
-  // Assignment removed; "Need more information" ordered before In Progress.
+  // Assignment / Awaiting exec action removed; "Need more information" ordered before In Progress.
   const STATUSES: ContentRequestStatus[] = [
     "DRAFT", "SUBMITTED", "AWAITING_INFORMATION", "IN_PROGRESS",
-    "AWAITING_EXECUTIVE_ACTION", "COMPLETED", "CANCELLED",
+    "COMPLETED", "CANCELLED",
   ];
+
+  const isOwner = request.submittedById === session.user.id;
+  const canEdit = (isOwner || isExec || membership.role === "DIRECTOR") && !["COMPLETED", "CANCELLED"].includes(request.status);
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -73,6 +76,13 @@ export default async function ContentRequestDetailPage({ params }: Props) {
             Submitted by {request.submittedBy.name} · {formatDateTime(request.createdAt)}
           </p>
         </div>
+        {canEdit && (
+          <Button asChild variant="outline" size="sm" className="flex-shrink-0">
+            <Link href={`/${societySlug}/requests/content/${request.id}/edit`}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -117,13 +127,13 @@ export default async function ContentRequestDetailPage({ params }: Props) {
             <CardContent>
               <div className="flex gap-3 flex-wrap">
                 {request.bannerRequired && (
-                  <span className="bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full">Banner / Graphic</span>
+                  <span className={`text-sm px-3 py-1 rounded-full ${request.bannerDone ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground"}`}>Banner / Graphic{request.bannerDone ? " ✓" : ""}</span>
                 )}
                 {request.blurbRequired && (
-                  <span className="bg-green-50 text-green-700 text-sm px-3 py-1 rounded-full">Event Blurb</span>
+                  <span className={`text-sm px-3 py-1 rounded-full ${request.blurbDone ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground"}`}>Event Blurb{request.blurbDone ? " ✓" : ""}</span>
                 )}
                 {request.rubricRequired && (
-                  <span className="bg-orange-50 text-orange-700 text-sm px-3 py-1 rounded-full">Rubric Event</span>
+                  <span className={`text-sm px-3 py-1 rounded-full ${(request.rubricEventLink || request.rubricSubmittedAt) ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground"}`}>Rubric Event{(request.rubricEventLink || request.rubricSubmittedAt) ? " ✓" : ""}</span>
                 )}
                 {!request.bannerRequired && !request.blurbRequired && !request.rubricRequired && (
                   <span className="text-muted-foreground text-sm">None specified</span>
@@ -207,7 +217,7 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                   <div className="space-y-3">
                     {!request.rubricSubmittedAt && (
                       <div className="text-sm text-orange-700">
-                        <p className="font-medium">Awaiting Executive Action</p>
+                        <p className="font-medium">Rubric event not yet created</p>
                         <p className="text-muted-foreground mt-0.5">Submit to Rubric directly or attach an existing event link.</p>
                       </div>
                     )}

@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   if (authErr) return authErr;
 
   const { society, id } = await params;
-  const { membership, error: memErr } = await requireMembership(session!.user.id, society, "DIRECTOR");
+  const { membership, error: memErr } = await requireMembership(session!.user.id, society);
   if (memErr) return memErr;
 
   const body = await req.json();
@@ -21,14 +21,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const canManage = membership!.role === "EXECUTIVE" || membership!.role === "DIRECTOR";
+  const isOwner = request.submittedById === session!.user.id;
   // Marketing directors (or execs) may fill in the finished content.
   const isMarketing =
     membership!.role === "EXECUTIVE" || (membership!.title?.toLowerCase().includes("marketing") ?? false);
+  // Owner or manager may edit the request's own details.
+  const canEditCore = isOwner || canManage;
+
+  if (!canEditCore && !canManage && !isMarketing) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const updated = await prisma.contentRequest.update({
     where: { id },
     data: {
-      ...(body.status ? { status: body.status } : {}),
+      ...(canManage && body.status ? { status: body.status } : {}),
+      ...(canEditCore && typeof body.eventName === "string" ? { eventName: body.eventName } : {}),
+      ...(canEditCore && body.startDate ? { startDate: new Date(body.startDate) } : {}),
+      ...(canEditCore && body.endDate !== undefined ? { endDate: body.endDate ? new Date(body.endDate) : null } : {}),
+      ...(canEditCore && typeof body.location === "string" ? { location: body.location } : {}),
+      ...(canEditCore && typeof body.keyPoints === "string" ? { keyPoints: body.keyPoints } : {}),
+      ...(canEditCore && body.deadline ? { deadline: new Date(body.deadline) } : {}),
+      ...(canEditCore && typeof body.bannerRequired === "boolean" ? { bannerRequired: body.bannerRequired } : {}),
+      ...(canEditCore && typeof body.blurbRequired === "boolean" ? { blurbRequired: body.blurbRequired } : {}),
+      ...(canEditCore && typeof body.rubricRequired === "boolean" ? { rubricRequired: body.rubricRequired } : {}),
+      ...(canEditCore && body.otherNotes !== undefined ? { otherNotes: body.otherNotes || null } : {}),
       ...(isMarketing && body.finishedBlurb !== undefined ? { finishedBlurb: body.finishedBlurb || null } : {}),
       ...(isMarketing && typeof body.bannerDone === "boolean" ? { bannerDone: body.bannerDone } : {}),
       ...(isMarketing && typeof body.blurbDone === "boolean" ? { blurbDone: body.blurbDone } : {}),
@@ -56,10 +74,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   await createAuditLog({
     societyId: membership!.societyId,
     userId: session!.user.id,
-    action: "STATUS_CHANGE",
+    action: body.status ? "STATUS_CHANGE" : "UPDATE",
     entityType: "ContentRequest",
     entityId: id,
-    metadata: { from: request.status, to: body.status },
+    ...(body.status ? { metadata: { from: request.status, to: body.status } } : {}),
   });
 
   if (body.status && body.status !== request.status) {

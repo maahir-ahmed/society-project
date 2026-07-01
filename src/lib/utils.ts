@@ -40,7 +40,6 @@ export function statusColor(status: string): string {
     ASSIGNED: "bg-purple-100 text-purple-700",
     IN_PROGRESS: "bg-yellow-100 text-yellow-700",
     AWAITING_INFORMATION: "bg-orange-100 text-orange-700",
-    AWAITING_EXECUTIVE_ACTION: "bg-red-100 text-red-700",
     COMPLETED: "bg-green-100 text-green-700",
     CANCELLED: "bg-gray-100 text-gray-500",
     UNDER_REVIEW: "bg-yellow-100 text-yellow-700",
@@ -57,7 +56,6 @@ export function statusColor(status: string): string {
 
 const STATUS_LABEL_OVERRIDES: Record<string, string> = {
   AWAITING_INFORMATION: "Need more information",
-  AWAITING_EXECUTIVE_ACTION: "Awaiting exec action",
 };
 
 export function statusLabel(status: string): string {

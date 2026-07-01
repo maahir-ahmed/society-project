@@ -15,12 +15,11 @@ interface Props {
   searchParams: Promise<{ status?: string }>;
 }
 
-// Tab order — ASSIGNED removed; "Need more information" sits before In Progress.
+// Tab order — ASSIGNED / Awaiting exec action removed; "Need more information" sits before In Progress.
 const TABS: ContentRequestStatus[] = [
   "SUBMITTED",
   "AWAITING_INFORMATION",
   "IN_PROGRESS",
-  "AWAITING_EXECUTIVE_ACTION",
   "COMPLETED",
   "CANCELLED",
 ];
@@ -144,13 +143,13 @@ export default async function ContentRequestsPage({ params, searchParams }: Prop
                           </div>
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                             {r.bannerRequired && (
-                              <span className="inline-flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md"><ImageIcon className="h-3 w-3" /> Banner</span>
+                              <span className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md", r.bannerDone ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground")}><ImageIcon className="h-3 w-3" /> Banner</span>
                             )}
                             {r.blurbRequired && (
-                              <span className="inline-flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md"><AlignLeft className="h-3 w-3" /> Blurb</span>
+                              <span className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md", r.blurbDone ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground")}><AlignLeft className="h-3 w-3" /> Blurb</span>
                             )}
                             {r.rubricRequired && (
-                              <span className="inline-flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md"><QrCode className="h-3 w-3" /> Rubric</span>
+                              <span className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md", (r.rubricEventLink || r.rubricSubmittedAt) ? "bg-green-100 text-green-700" : "bg-secondary text-secondary-foreground")}><QrCode className="h-3 w-3" /> Rubric</span>
                             )}
                           </div>
                         </div>

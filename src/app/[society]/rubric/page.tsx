@@ -7,13 +7,27 @@ import { RubricShell } from "@/components/rubric/RubricShell";
 import { RubricNotConfigured } from "@/components/rubric/RubricNotConfigured";
 import { Loader2, TrendingUp, Users, Package, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
 import { useRubricClient } from "@/hooks/useRubricClient";
+import { formatCurrency } from "@/lib/utils";
 
 interface OverviewData {
-  clubPage: Record<string, unknown> | null;
-  salesMonth: Record<string, unknown> | null;
-  grantsMonth: Record<string, unknown> | null;
-  affiliation: Record<string, unknown> | null;
+  membership: Record<string, unknown> | null;
+  ticketing: Record<string, unknown> | null;
+  settlement: Record<string, unknown> | null;
   team: Record<string, unknown> | null;
+}
+
+// Events come back grouped under `eventdetails`; flatten + dedupe by eventid.
+function flattenEvents(d: Record<string, unknown> | null): Record<string, unknown>[] {
+  const details = d?.eventdetails as Record<string, unknown> | undefined;
+  if (!details) return [];
+  const byId = new Map<unknown, Record<string, unknown>>();
+  for (const val of Object.values(details)) {
+    if (!Array.isArray(val)) continue;
+    for (const ev of val as Record<string, unknown>[]) {
+      if (ev?.eventid != null && !byId.has(ev.eventid)) byId.set(ev.eventid, ev);
+    }
+  }
+  return [...byId.values()];
 }
 
 function StatCard({ label, value, icon: Icon, color = "blue" }: {
@@ -51,20 +65,18 @@ export default function RubricOverviewPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    rubric.getToken().then((token) => {
+    rubric.getToken().then(() => {
       return Promise.allSettled([
-        rubric.call({ type: "getClubPage", societyid: Number(token.societyID) }),
-        rubric.call({ type: "getHomepageEventSalesMonth" }),
-        rubric.call({ type: "getHomepageGrantsApprovedMonth" }),
-        rubric.call({ type: "getClubAffiliationStatus" }),
+        rubric.call({ type: "getSocietyPortalMembershipHomePage" }),
+        rubric.call({ type: "getSocietyPortalTicketingHomePage" }),
+        rubric.call({ type: "getSocietyPortalSettlementList" }),
         rubric.call({ type: "getSocietyTeamMembers", complete: true }),
       ]);
-    }).then(([clubPage, salesMonth, grantsMonth, affiliation, team]) => {
+    }).then(([membership, ticketing, settlement, team]) => {
       setData({
-        clubPage: clubPage.status === "fulfilled" ? clubPage.value : null,
-        salesMonth: salesMonth.status === "fulfilled" ? salesMonth.value : null,
-        grantsMonth: grantsMonth.status === "fulfilled" ? grantsMonth.value : null,
-        affiliation: affiliation.status === "fulfilled" ? affiliation.value : null,
+        membership: membership.status === "fulfilled" ? membership.value : null,
+        ticketing: ticketing.status === "fulfilled" ? ticketing.value : null,
+        settlement: settlement.status === "fulfilled" ? settlement.value : null,
         team: team.status === "fulfilled" ? team.value : null,
       });
     }).catch((err: unknown) => {
@@ -93,17 +105,14 @@ export default function RubricOverviewPage() {
     </RubricShell>
   );
 
-  const stats = data?.clubPage as Record<string, unknown> | null;
-  const membershipStats = stats?.membershipstats as Record<string, unknown> | null;
-  const eventStats = stats?.eventstats as Record<string, unknown> | null;
-  const merchStats = stats?.merchstats as Record<string, unknown> | null;
+  const activeMembers = (data?.membership as Record<string, unknown> | null)?.active_count as number | undefined;
 
-  const salesMonthData = (data?.salesMonth as Record<string, unknown> | null)?.stats as Record<string, unknown> | null;
-  const grantsMonthData = (data?.grantsMonth as Record<string, unknown> | null)?.stats as Record<string, unknown> | null;
+  const events = flattenEvents(data?.ticketing ?? null);
+  const totalEvents = events.length || undefined;
+  const revenue = events.reduce((sum, e) => sum + parseFloat(String(e.totalrev ?? "0").replace(/[^0-9.]/g, "") || "0"), 0);
 
-  const affiliation = data?.affiliation as Record<string, unknown> | null;
-  const affiliations = (affiliation?.clubAffiliations as unknown[]) ?? [];
-  const hasAccess = (affiliation?.hasModuleAccess as Record<string, unknown> | null)?.hasAccess;
+  const grants = ((data?.settlement as Record<string, unknown> | null)?.fundingsummary as unknown[]) ?? [];
+  const grantsCount = grants.length || undefined;
 
   const team = data?.team as Record<string, unknown> | null;
   const members = (team?.members as unknown[]) ?? [];
@@ -113,44 +122,13 @@ export default function RubricOverviewPage() {
     <RubricShell>
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Revenue This Month" value={salesMonthData?.event_sales_month as string ?? "—"} icon={TrendingUp} color="green" />
-        <StatCard label="Grants Approved (Month)" value={grantsMonthData?.grants_approved_month as string ?? "—"} icon={Package} color="amber" />
-        <StatCard label="Active Members" value={membershipStats?.active_count as number ?? eventStats?.member_count as number ?? "—"} icon={Users} color="blue" />
-        <StatCard label="Total Events" value={eventStats?.total_count as number ?? "—"} icon={TrendingUp} color="purple" />
+        <StatCard label="Ticket Revenue" value={revenue > 0 ? formatCurrency(revenue) : undefined} icon={TrendingUp} color="green" />
+        <StatCard label="Grants" value={grantsCount} icon={Package} color="amber" />
+        <StatCard label="Active Members" value={activeMembers} icon={Users} color="blue" />
+        <StatCard label="Total Events" value={totalEvents} icon={TrendingUp} color="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Affiliation Status */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Affiliation Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {affiliations.length === 0 ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                {hasAccess ? "No affiliation records found" : "Affiliation module not accessible"}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {affiliations.slice(0, 5).map((a, i) => {
-                  const aff = a as Record<string, unknown>;
-                  return (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{(aff.name as string) ?? "Affiliation"}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        aff.status === "affiliated" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {aff.status as string ?? "unknown"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Rubric Team Members */}
         <Card>
           <CardHeader className="pb-3">
@@ -186,23 +164,6 @@ export default function RubricOverviewPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Merch stats */}
-        {merchStats && (
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Merchandise</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {Object.entries(merchStats).map(([k, v]) => (
-                  <div key={k}>
-                    <p className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</p>
-                    <p className="font-semibold">{String(v)}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Quick links */}
         <Card>
