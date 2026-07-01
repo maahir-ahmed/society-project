@@ -245,16 +245,33 @@ model ContentRequest {
   rubricQrCodeUrl String?
   rubricEventId   String?
   rubricSubmittedAt DateTime?
+  finishedBlurb   String?              @db.Text   // marketing pastes the final event blurb here
+  bannerDone      Boolean              @default(false)
+  blurbDone       Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
-  society     Society @relation(fields: [societyId], references: [id], onDelete: Cascade)
-  submittedBy User    @relation("ContentRequestSubmitter", fields: [submittedById], references: [id])
-  assignedTo  User?   @relation("ContentRequestAssignee", fields: [assignedToId], references: [id])
-  thread      Thread?
+  society      Society @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  submittedBy  User    @relation("ContentRequestSubmitter", fields: [submittedById], references: [id])
+  assignedTo   User?   @relation("ContentRequestAssignee", fields: [assignedToId], references: [id])
+  thread       Thread?
+  deliverables ContentDeliverable[]
 
   @@index([societyId])
   @@index([status])
+}
+
+// Finished graphics/banners uploaded by marketing, for download.
+model ContentDeliverable {
+  id               String   @id @default(cuid())
+  contentRequestId String
+  fileName         String
+  fileUrl          String
+  uploadedAt       DateTime @default(now())
+
+  contentRequest ContentRequest @relation(fields: [contentRequestId], references: [id], onDelete: Cascade)
+
+  @@index([contentRequestId])
 }
 
 // ─── Room Bookings ────────────────────────────────────────────────────────────

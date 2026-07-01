@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { ThreadView } from "@/components/requests/ThreadView";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
+import { MarketingContentPanel } from "@/components/requests/MarketingContentPanel";
 import { RubricForm } from "./RubricForm";
 import { SubmitToRubricDialog } from "@/components/requests/SubmitToRubricDialog";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -32,7 +33,7 @@ export default async function ContentRequestDetailPage({ params }: Props) {
     where: { id },
     include: {
       submittedBy: { select: { id: true, name: true, avatarUrl: true, email: true } },
-      assignedTo: { select: { id: true, name: true, avatarUrl: true } },
+      deliverables: { orderBy: { uploadedAt: "asc" } },
       thread: {
         include: {
           comments: {
@@ -47,18 +48,13 @@ export default async function ContentRequestDetailPage({ params }: Props) {
   if (!request || request.societyId !== membership.societyId) notFound();
 
   const isExec = membership.role === "EXECUTIVE";
+  const isMarketing = isExec || (membership.title?.toLowerCase().includes("marketing") ?? false);
 
+  // Assignment removed; "Need more information" ordered before In Progress.
   const STATUSES: ContentRequestStatus[] = [
-    "DRAFT", "SUBMITTED", "ASSIGNED", "IN_PROGRESS",
-    "AWAITING_INFORMATION", "AWAITING_EXECUTIVE_ACTION", "COMPLETED", "CANCELLED",
+    "DRAFT", "SUBMITTED", "AWAITING_INFORMATION", "IN_PROGRESS",
+    "AWAITING_EXECUTIVE_ACTION", "COMPLETED", "CANCELLED",
   ];
-
-  const execMembers = isExec
-    ? await prisma.societyMembership.findMany({
-        where: { societyId: membership.societyId, role: "EXECUTIVE", isActive: true },
-        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-      })
-    : [];
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -135,6 +131,44 @@ export default async function ContentRequestDetailPage({ params }: Props) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Marketing deliverables — editable for marketing/exec, read-only otherwise */}
+          {isMarketing && (request.bannerRequired || request.blurbRequired) ? (
+            <MarketingContentPanel
+              societySlug={societySlug}
+              requestId={request.id}
+              bannerRequired={request.bannerRequired}
+              blurbRequired={request.blurbRequired}
+              currentStatus={request.status}
+              initialBlurb={request.finishedBlurb ?? ""}
+              initialBannerDone={request.bannerDone}
+              initialBlurbDone={request.blurbDone}
+              deliverables={request.deliverables}
+            />
+          ) : (request.deliverables.length > 0 || request.finishedBlurb) ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Finished Content</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {request.deliverables.length > 0 && (
+                  <div className="space-y-1.5">
+                    {request.deliverables.map((d) => (
+                      <a key={d.id} href={d.fileUrl} download className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors">
+                        <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" /> <span className="truncate">{d.fileName}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {request.finishedBlurb && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Event Blurb</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{request.finishedBlurb}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {/* Rubric section */}
           {request.rubricRequired && (
@@ -234,32 +268,12 @@ export default async function ContentRequestDetailPage({ params }: Props) {
             </CardContent>
           </Card>
 
-          {(isExec || membership.role === "DIRECTOR") && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Assignment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {request.assignedTo ? (
-                  <div className="flex items-center gap-2">
-                    <UserAvatar name={request.assignedTo.name} avatarUrl={request.assignedTo.avatarUrl} />
-                    <p className="text-sm font-medium">{request.assignedTo.name}</p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Unassigned</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {isExec && (
             <StatusUpdater
               requestId={request.id}
               currentStatus={request.status}
               statuses={STATUSES}
               apiPath={`/api/societies/${societySlug}/content-requests/${request.id}`}
-              members={execMembers.map((m) => m.user)}
-              assignedToId={request.assignedToId}
             />
           )}
         </div>

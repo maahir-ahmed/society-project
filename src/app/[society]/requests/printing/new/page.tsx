@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { computePrintingCost, type PaperSize, type Sided, type Colour } from "@/
 export default function NewPrintingRequestPage() {
   const params = useParams<{ society: string }>();
   const router = useRouter();
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -59,10 +57,6 @@ export default function NewPrintingRequestPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        clubName: form.get("clubName"),
-        contactName: form.get("contactName"),
-        contactEmail: form.get("contactEmail"),
-        contactPhone: form.get("contactPhone"),
         pickupAt: form.get("pickupAt"),
         quantity: Number(quantity),
         pages: Number(pages),
@@ -116,31 +110,14 @@ export default function NewPrintingRequestPage() {
 
       <form onSubmit={handleSubmit}>
         <Card>
-          <CardHeader><CardTitle className="text-base">Your details</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader><CardTitle className="text-base">Collection</CardTitle></CardHeader>
+          <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="clubName">Club Name *</Label>
-              <Input id="clubName" name="clubName" required />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contactName">Your Name *</Label>
-                <Input id="contactName" name="contactName" required defaultValue={session?.user?.name ?? ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactEmail">Your Email *</Label>
-                <Input id="contactEmail" name="contactEmail" type="email" required defaultValue={session?.user?.email ?? ""} />
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contactPhone">Your Phone Number *</Label>
-                <Input id="contactPhone" name="contactPhone" type="tel" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pickupAt">Latest pick-up date &amp; time *</Label>
-                <Input id="pickupAt" name="pickupAt" type="datetime-local" required />
-              </div>
+              <Label htmlFor="pickupAt">Latest pick-up date &amp; time *</Label>
+              <Input id="pickupAt" name="pickupAt" type="datetime-local" required />
+              <p className="text-xs text-muted-foreground">
+                Submitted on behalf of your society — your name and email are taken from your account.
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -55,7 +55,13 @@ export function statusColor(status: string): string {
   return map[status] ?? "bg-gray-100 text-gray-700";
 }
 
+const STATUS_LABEL_OVERRIDES: Record<string, string> = {
+  AWAITING_INFORMATION: "Need more information",
+  AWAITING_EXECUTIVE_ACTION: "Awaiting exec action",
+};
+
 export function statusLabel(status: string): string {
+  if (STATUS_LABEL_OVERRIDES[status]) return STATUS_LABEL_OVERRIDES[status];
   return status
     .split("_")
     .map((w) => w[0] + w.slice(1).toLowerCase())

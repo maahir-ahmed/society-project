@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { formatDate } from "@/lib/utils";
 import { SECRETARIAL_ALLOWANCE } from "@/lib/printing";
-import { Printer, Plus, FileText } from "lucide-react";
+import { Printer, Plus, FileText, Info } from "lucide-react";
 
 interface Props {
   params: Promise<{ society: string }>;
@@ -82,6 +82,12 @@ export default async function PrintingRequestsPage({ params }: Props) {
           <p className="text-xs text-muted-foreground mt-2">Only approved requests are deducted.</p>
         </CardContent>
       </Card>
+
+      {/* Multi-document disclaimer */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900">
+        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <p>Each request is for a <strong>single document</strong>. If you need multiple documents printed, please submit a <strong>separate request for each</strong>.</p>
+      </div>
 
       {requests.length === 0 ? (
         <div className="flex flex-col items-center py-16 gap-3 text-center">

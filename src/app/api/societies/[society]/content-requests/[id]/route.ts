@@ -21,13 +21,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Marketing directors (or execs) may fill in the finished content.
+  const isMarketing =
+    membership!.role === "EXECUTIVE" || (membership!.title?.toLowerCase().includes("marketing") ?? false);
+
   const updated = await prisma.contentRequest.update({
     where: { id },
     data: {
       ...(body.status ? { status: body.status } : {}),
-      ...(body.assignedToId !== undefined ? { assignedToId: body.assignedToId } : {}),
+      ...(isMarketing && body.finishedBlurb !== undefined ? { finishedBlurb: body.finishedBlurb || null } : {}),
+      ...(isMarketing && typeof body.bannerDone === "boolean" ? { bannerDone: body.bannerDone } : {}),
+      ...(isMarketing && typeof body.blurbDone === "boolean" ? { blurbDone: body.blurbDone } : {}),
     },
   });
+
+  if (isMarketing && Array.isArray(body.addDeliverables) && body.addDeliverables.length > 0) {
+    await prisma.contentDeliverable.createMany({
+      data: body.addDeliverables
+        .filter((d: { fileUrl?: string }) => d?.fileUrl)
+        .map((d: { fileName?: string; fileUrl: string }) => ({
+          contentRequestId: id,
+          fileName: d.fileName || d.fileUrl.split("/").pop() || "graphic",
+          fileUrl: d.fileUrl,
+        })),
+    });
+  }
+
+  if (isMarketing && Array.isArray(body.removeDeliverableIds) && body.removeDeliverableIds.length > 0) {
+    await prisma.contentDeliverable.deleteMany({
+      where: { id: { in: body.removeDeliverableIds }, contentRequestId: id },
+    });
+  }
 
   await createAuditLog({
     societyId: membership!.societyId,

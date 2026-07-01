@@ -6,11 +6,9 @@ import { notifyExecs } from "@/lib/notifications";
 import { computePrintingCost, SECRETARIAL_ALLOWANCE } from "@/lib/printing";
 import { z } from "zod";
 
+// Contact details (club, name, email, phone) are derived server-side from the
+// logged-in user + society, so the form doesn't ask for them.
 const schema = z.object({
-  clubName: z.string().min(1),
-  contactName: z.string().min(1),
-  contactEmail: z.string().email(),
-  contactPhone: z.string().min(1),
   pickupAt: z.string().min(1),
   quantity: z.number().int().positive(),
   pages: z.number().int().positive(),
@@ -68,14 +66,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
     const body = schema.parse(await req.json());
     const cost = computePrintingCost(body);
 
+    // Derive contact details from the submitter + society.
+    const [user, soc] = await Promise.all([
+      prisma.user.findUnique({ where: { id: session!.user.id }, select: { name: true, email: true, phone: true } }),
+      prisma.society.findUnique({ where: { id: membership!.societyId }, select: { name: true } }),
+    ]);
+
     const request = await prisma.printingRequest.create({
       data: {
         societyId: membership!.societyId,
         submittedById: session!.user.id,
-        clubName: body.clubName,
-        contactName: body.contactName,
-        contactEmail: body.contactEmail,
-        contactPhone: body.contactPhone,
+        clubName: soc?.name ?? "",
+        contactName: user?.name ?? "",
+        contactEmail: user?.email ?? "",
+        contactPhone: user?.phone ?? "N/A",
         pickupAt: new Date(body.pickupAt),
         quantity: body.quantity,
         pages: body.pages,
