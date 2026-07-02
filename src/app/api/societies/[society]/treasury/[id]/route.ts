@@ -32,6 +32,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: "Only executives can change status" }, { status: 403 });
   }
 
+  // Only execs classify a claim into a budget category. null = unclassify.
+  if (body.budgetCategoryId !== undefined) {
+    if (!isExec) {
+      return NextResponse.json({ error: "Only executives can classify claims" }, { status: 403 });
+    }
+    if (body.budgetCategoryId !== null) {
+      const cat = await prisma.budgetCategory.findUnique({ where: { id: body.budgetCategoryId } });
+      if (!cat || cat.societyId !== membership!.societyId) {
+        return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+      }
+    }
+  }
+
   const editsFields =
     ["contactEmail", "expenseDate", "locationSupplier", "description", "amount"].some((k) => body[k] !== undefined) ||
     Array.isArray(body.addReceipts) || Array.isArray(body.removeReceiptIds);
@@ -48,6 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
       ...(canEdit && body.locationSupplier !== undefined ? { locationSupplier: body.locationSupplier } : {}),
       ...(canEdit && body.description !== undefined ? { description: body.description } : {}),
       ...(canEdit && body.amount !== undefined ? { amount: Number(body.amount) } : {}),
+      ...(isExec && body.budgetCategoryId !== undefined ? { budgetCategoryId: body.budgetCategoryId } : {}),
     },
   });
 

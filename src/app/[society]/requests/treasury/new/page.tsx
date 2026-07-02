@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, AlertCircle, CheckCircle, Upload, Building } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +27,13 @@ interface BankAccount {
   accountNumber: string;
 }
 
+interface BudgetCategory {
+  id: string;
+  name: string;
+}
+
+const UNCLASSIFIED = "__none__";
+
 export default function NewTreasuryPage() {
   const router = useRouter();
   const params = useParams<{ society: string }>();
@@ -34,6 +42,8 @@ export default function NewTreasuryPage() {
   const [useExisting, setUseExisting] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [savedAccount, setSavedAccount] = useState<BankAccount | null | undefined>(undefined);
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [categoryId, setCategoryId] = useState<string>(UNCLASSIFIED);
 
   // Fetch the user's bank account on mount
   useEffect(() => {
@@ -46,6 +56,14 @@ export default function NewTreasuryPage() {
       })
       .catch(() => setSavedAccount(null));
   }, []);
+
+  // Fetch budget categories so the submitter can classify the expense.
+  useEffect(() => {
+    fetch(`/api/societies/${params.society}/budget/categories`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => setCategories([]));
+  }, [params.society]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,6 +95,7 @@ export default function NewTreasuryPage() {
       useExistingBank: useExisting && !!savedAccount,
       acknowledgedRules: true,
       receiptUrls: fileUrls,
+      budgetCategoryId: categoryId === UNCLASSIFIED ? null : categoryId,
       status: "SUBMITTED",
     };
 
@@ -182,6 +201,19 @@ export default function NewTreasuryPage() {
                 rows={3} required
               />
             </div>
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label>Budget Category</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UNCLASSIFIED}>Not sure — let an exec classify it</SelectItem>
+                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Which budget does this expense come out of? An exec can change this later.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

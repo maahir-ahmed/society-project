@@ -121,6 +121,7 @@ model Society {
   printingRequests PrintingRequest[]
   announcements    Announcement[]
   auditLogs        AuditLog[]
+  budgetCategories BudgetCategory[]
 }
 
 model User {
@@ -320,20 +321,23 @@ model TreasuryRequest {
   description      String         @db.Text
   amount           Decimal        @db.Decimal(10, 2)
   bankAccountId    String?
+  budgetCategoryId String?
   status           TreasuryStatus @default(DRAFT)
   acknowledgedRules Boolean       @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  society     Society              @relation(fields: [societyId], references: [id], onDelete: Cascade)
-  submittedBy User                 @relation("TreasurySubmitter", fields: [submittedById], references: [id])
-  bankAccount BankAccount?         @relation(fields: [bankAccountId], references: [id])
-  approvals   TreasuryApproval[]
-  receipts    TreasuryAttachment[]
-  thread      Thread?
+  society        Society              @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  submittedBy    User                 @relation("TreasurySubmitter", fields: [submittedById], references: [id])
+  bankAccount    BankAccount?         @relation(fields: [bankAccountId], references: [id])
+  budgetCategory BudgetCategory?      @relation(fields: [budgetCategoryId], references: [id], onDelete: SetNull)
+  approvals      TreasuryApproval[]
+  receipts       TreasuryAttachment[]
+  thread         Thread?
 
   @@index([societyId])
   @@index([status])
+  @@index([budgetCategoryId])
 }
 
 model TreasuryApproval {
@@ -495,6 +499,36 @@ model Announcement {
 
   society Society @relation(fields: [societyId], references: [id], onDelete: Cascade)
 
+  @@index([societyId])
+}
+
+// ─── Spending Budget ──────────────────────────────────────────────────────────
+
+// A budget line for the society's year-by-year planning + live tracking.
+// yearlyBudget is the current (2026) budget; treasury requests classified into
+// this category are summed as the live spend and compared against it. The other
+// columns are the historical planning figures + rationale, all editable in-app.
+model BudgetCategory {
+  id           String   @id @default(cuid())
+  societyId    String
+  name         String
+  group        String   @default("PORTFOLIO") // "PORTFOLIO" | "OTHER" — for subtotals
+  yearlyBudget Decimal  @default(0) @db.Decimal(10, 2) // the current-year (2026) budget
+  budget2024   Decimal? @db.Decimal(10, 2)
+  budget2024v2 Decimal? @db.Decimal(10, 2)
+  budget2025   Decimal? @db.Decimal(10, 2)
+  usage2025    Decimal? @db.Decimal(10, 2)
+  worstCase    Decimal? @db.Decimal(10, 2)
+  reasoning    String?  @db.Text
+  notes        String?  @db.Text
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  society          Society           @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  treasuryRequests TreasuryRequest[]
+
+  @@unique([societyId, name])
   @@index([societyId])
 }
 

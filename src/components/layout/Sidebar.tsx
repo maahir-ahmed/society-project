@@ -14,6 +14,7 @@ import {
   LogOut,
   Globe2,
   UserCog,
+  PiggyBank,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,12 @@ const navItems = [
     href: "/requests/printing",
     label: "Printing",
     icon: Printer,
+  },
+  {
+    href: "/budget",
+    label: "Spending Budget",
+    icon: PiggyBank,
+    minRole: "EXECUTIVE" as const,
   },
   {
     href: "/executive/queue",
