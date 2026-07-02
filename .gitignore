@@ -48,3 +48,6 @@ next-env.d.ts
 # user uploads (runtime volume in prod)
 /uploads/*
 !/uploads/.gitkeep
+
+# Claude Code local config
+.claude/
