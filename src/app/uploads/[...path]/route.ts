@@ -12,7 +12,7 @@ const MIME: Record<string, string> = {
   jpeg: "image/jpeg",
   gif: "image/gif",
   webp: "image/webp",
-  svg: "image/svg+xml",
+  // no svg: it executes script when rendered same-origin
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
@@ -37,6 +37,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
       headers: {
         "Content-Type": MIME[ext] ?? "application/octet-stream",
         "Cache-Control": "private, max-age=3600",
+        // Uploads are user-supplied: never let the browser sniff a scriptable
+        // type or run anything embedded in them (defence in depth vs stored XSS).
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
       },
     });
   } catch {

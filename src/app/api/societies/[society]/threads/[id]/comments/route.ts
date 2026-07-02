@@ -28,13 +28,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Param
       return NextResponse.json({ error: "Only executives can post internal notes" }, { status: 403 });
     }
 
-    // Find the thread by request ID
+    // Find the thread by request ID, scoped to this society so members of
+    // one society can't comment on another society's requests.
+    const societyId = membership!.societyId;
     const thread = await prisma.thread.findFirst({
       where: {
         OR: [
-          { contentRequestId: requestId },
-          { roomBookingId: requestId },
-          { treasuryRequestId: requestId },
+          { contentRequest: { id: requestId, societyId } },
+          { roomBooking: { id: requestId, societyId } },
+          { treasuryRequest: { id: requestId, societyId } },
         ],
       },
     });
