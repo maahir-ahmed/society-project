@@ -211,6 +211,14 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                       <p className="text-sm font-medium mb-2">QR Code</p>
                       <RubricQrCode value={request.rubricEventLink} />
                     </div>
+                    {isExec && (
+                      <details className="text-sm">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Update Rubric link</summary>
+                        <div className="mt-2">
+                          <RubricForm requestId={request.id} societySlug={societySlug} defaultValue={request.rubricEventLink} />
+                        </div>
+                      </details>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">

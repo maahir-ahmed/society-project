@@ -1,88 +1,79 @@
-# UNSW Society Management Platform
+# Society Platform
 
-A production-ready, self-hosted web platform for managing UNSW student society operations. Built for societies like SecSoc, CSESoc, PCSoc, and others.
+Web app for running a university society committee: content requests, room bookings, treasury reimbursements, printing, member management, and a Rubric ([hellorubric.com](https://hellorubric.com)) portal. Built for UNSW Security Society but works for any society.
 
 ## Features
 
-- **Multi-tenant** — Multiple societies on one installation, each with their own slug URL
-- **Role-based access** — Executive, Director, and Subcommittee roles with granular permissions
-- **Content Request System** — Marketing request workflow with Rubric event integration
-- **Room Booking System** — Arc booking requests with external guest warnings (7-day rule)
-- **Treasury System** — Reimbursement workflow with configurable multi-executive approval
-- **Forum Threads** — Every request gets a discussion thread with internal notes (execs only)
-- **Notification System** — In-app + email notifications for all key events
-- **Executive Queue** — Centralised dashboard for all items requiring exec action
-- **Audit Logging** — Complete history of all actions across the platform
-- **Society Customisation** — Name, logo, colours, social links per society
+**Requests**
+- **Content requests** — marketing workflow. The list is ordered by event date, colour-coded by how close the event is, and each status tab shows a count. Marketing directors upload finished graphics, paste the event blurb, and tick items done. Rubric event links generate a transparent QR code automatically.
+- **Room bookings** — Arc booking requests, with a warning when external guests need 7 business days' notice.
+- **Treasury** — reimbursement claims with amount-based multi-executive approval (≥ $50 needs the treasurer). Owners can edit claims and add/remove receipts while a claim is still pending. Bank details saved per user.
+- **Printing** — club printing requests costed against a per-tier secretarial budget (Bronze/Silver/Gold), approved by execs; approved requests draw down the budget.
 
-## Quick Start
+**Rubric portal** — reads events, ticket sales, members, grants, and settlements from Rubric, and submits events (including the Arc affiliation form). Executives see everything; directors see the Events tab only.
+
+**Platform**
+- Roles: Executive, Director, Subcommittee, with a shared exec queue for anything needing action.
+- Per-society branding (logo/banner upload, colours), member directory, titles, notifications, and an audit log.
+- Single-society mode: set `SOCIETY_SLUG` to serve one society at the root domain (clean, slug-free URLs).
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Prisma 7 + PostgreSQL · NextAuth v5 · Tailwind CSS v4 · shadcn/ui
+
+## Getting started
 
 ```bash
-# Install dependencies
 npm install
 
-# Start local database
+# local Postgres
 docker compose -f docker-compose.dev.yml up -d
 
-# Set up environment
 cp .env.example .env
-# Edit .env: set AUTH_SECRET to a random string (openssl rand -base64 32)
+# set AUTH_SECRET (openssl rand -base64 32) and DATABASE_URL
 
-# Run migrations + seed demo data
-npm run db:push
-npm run db:seed
-
-# Start dev server
+npm run db:push      # apply schema
+npm run db:seed      # demo society + accounts
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+App runs at `http://localhost:3000`. The seed prints demo logins (password `password123`).
 
-Demo accounts (password: `password123`):
-| Email | Role |
-|---|---|
-| `maahir@secsoc.unsw.edu.au` | Executive (President & Treasurer) |
-| `alice@secsoc.unsw.edu.au` | Executive |
-| `bob@secsoc.unsw.edu.au` | Director |
-| `charlie@secsoc.unsw.edu.au` | Subcommittee |
+## Environment
 
-## Production Deployment
+| Var | Purpose |
+|-----|---------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `AUTH_SECRET` | NextAuth session secret |
+| `NEXTAUTH_URL` | Public app URL |
+| `SOCIETY_SLUG` | Single-society mode (blank = multi-society) |
+| `SMTP_*`, `EMAIL_FROM` | Email notifications (optional) |
+| `MAX_FILE_SIZE_MB` | Upload size cap (default 10) |
 
-```bash
-cp .env.example .env.production
-# Edit .env.production with production values + strong secrets
+## Scripts
 
-docker compose --env-file .env.production up -d --build
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server |
+| `npm run build` / `start` | Production build / serve |
+| `npm run db:push` | Sync schema to the database |
+| `npm run db:seed` | Seed data |
+| `npm run db:studio` | Prisma Studio |
+| `npm run lint` | ESLint |
+
+## Deployment
+
+Runs in Docker behind Cloudflare Tunnel, with a GitHub Actions self-hosted runner for push-to-deploy. See [`deploy/README.md`](deploy/README.md).
+
+## Structure
+
 ```
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full guide including Nginx, SSL, backups, and CI/CD.
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14 (App Router) + TypeScript |
-| Database | PostgreSQL 16 + Prisma ORM |
-| Auth | NextAuth v5 (JWT sessions) |
-| UI | TailwindCSS 4 + shadcn/ui |
-| Email | Nodemailer (SMTP) |
-| Deployment | Docker + Docker Compose |
-
-## Treasury Approval Rules
-
-| Amount | Required Approvals |
-|---|---|
-| Under $50 | 1 Executive |
-| $50 or over | 3 Executives, including the Treasurer |
-
-## Documentation
-
-- [Architecture & API](docs/ARCHITECTURE.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-
-## Adding a New Society
-
-1. Register at `/register`
-2. Go to `/setup` to create your society (you become its first Executive)
-3. Add members from the Members page
-4. Customise branding in Settings
+src/
+  app/            routes (App Router); [society]/ holds the per-society UI
+  components/     UI + feature components (shadcn/ui in components/ui)
+  lib/            auth, db, permissions, rubric, utils
+  hooks/          client hooks (e.g. useRubricClient)
+  proxy.ts        middleware (auth + single-society URL rewriting)
+prisma/           schema + seed
+deploy/           Docker compose, env templates, deploy scripts
+```

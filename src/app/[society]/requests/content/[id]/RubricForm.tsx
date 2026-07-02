@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export function RubricForm({ requestId, societySlug }: { requestId: string; societySlug: string }) {
+export function RubricForm({ requestId, societySlug, defaultValue }: { requestId: string; societySlug: string; defaultValue?: string }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -35,12 +35,13 @@ export function RubricForm({ requestId, societySlug }: { requestId: string; soci
         name="rubricEventLink"
         type="url"
         placeholder="Rubric event URL"
+        defaultValue={defaultValue}
         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
         required
       />
       <p className="text-xs text-muted-foreground">A QR code is generated automatically from this link.</p>
       <Button type="submit" size="sm" className="w-full" disabled={saving}>
-        {saving ? "Attaching…" : "Attach Rubric Event"}
+        {saving ? "Saving…" : defaultValue ? "Update link" : "Attach Rubric Event"}
       </Button>
     </form>
   );
