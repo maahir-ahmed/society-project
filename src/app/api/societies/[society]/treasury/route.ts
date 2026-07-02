@@ -19,6 +19,7 @@ const schema = z.object({
   saveToProfile: z.boolean().optional(),
   acknowledgedRules: z.boolean(),
   receiptUrls: z.array(z.string()).optional(),
+  budgetCategoryId: z.string().nullable().optional(),
   status: z.enum(["DRAFT", "SUBMITTED"]).default("SUBMITTED"),
 });
 
@@ -35,6 +36,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
 
     if (!body.acknowledgedRules) {
       return NextResponse.json({ error: "Must acknowledge reimbursement rules" }, { status: 400 });
+    }
+
+    // A chosen category must belong to this society.
+    if (body.budgetCategoryId) {
+      const cat = await prisma.budgetCategory.findUnique({ where: { id: body.budgetCategoryId } });
+      if (!cat || cat.societyId !== membership!.societyId) {
+        return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+      }
     }
 
     let bankAccountId: string | null = null;
@@ -70,6 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
         description: body.description,
         amount: body.amount,
         bankAccountId,
+        budgetCategoryId: body.budgetCategoryId ?? null,
         acknowledgedRules: body.acknowledgedRules,
         status: body.status === "SUBMITTED" ? "AWAITING_APPROVAL" : "DRAFT",
       },

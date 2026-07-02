@@ -146,11 +146,15 @@ export function TreasuryApprovalPanel({
           </div>
         )}
 
-        {isApproved && (
+        {currentStatus === "REIMBURSED" ? (
+          <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800 font-medium flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" /> Reimbursed
+          </div>
+        ) : isApproved && currentStatus !== "REJECTED" ? (
           <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800 font-medium flex items-center gap-2">
             <CheckCircle className="h-4 w-4" /> All approvals collected — pending reimbursement
           </div>
-        )}
+        ) : null}
 
         {/* Action buttons */}
         {(canApprove || canReject) && (
