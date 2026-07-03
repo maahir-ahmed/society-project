@@ -9,6 +9,7 @@ import { UserAvatar } from "@/components/shared/UserAvatar";
 import { ThreadView } from "@/components/requests/ThreadView";
 import { TreasuryApprovalPanel } from "@/components/requests/TreasuryApprovalPanel";
 import { EditTreasuryClaim } from "@/components/requests/EditTreasuryClaim";
+import { DeleteTreasuryClaim } from "@/components/requests/DeleteTreasuryClaim";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils";
 import { treasuryApprovalsNeeded, treasuryNeedsTreasurer, isTreasuryApproved } from "@/lib/permissions";
@@ -83,18 +84,21 @@ export default async function TreasuryDetailPage({ params }: Props) {
           </p>
         </div>
         {canEdit && (
-          <EditTreasuryClaim
-            societySlug={societySlug}
-            requestId={request.id}
-            initial={{
-              description: request.description,
-              amount,
-              expenseDate: request.expenseDate.toISOString(),
-              locationSupplier: request.locationSupplier,
-              contactEmail: request.contactEmail,
-            }}
-            receipts={request.receipts.map((r) => ({ id: r.id, fileName: r.fileName, fileUrl: r.fileUrl }))}
-          />
+          <div className="flex items-center gap-2">
+            <EditTreasuryClaim
+              societySlug={societySlug}
+              requestId={request.id}
+              initial={{
+                description: request.description,
+                amount,
+                expenseDate: request.expenseDate.toISOString(),
+                locationSupplier: request.locationSupplier,
+                contactEmail: request.contactEmail,
+              }}
+              receipts={request.receipts.map((r) => ({ id: r.id, fileName: r.fileName, fileUrl: r.fileUrl }))}
+            />
+            <DeleteTreasuryClaim societySlug={societySlug} requestId={request.id} />
+          </div>
         )}
       </div>
 

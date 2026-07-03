@@ -3,11 +3,12 @@ import { prisma } from "@/lib/db";
 import { requireAuth, requireMembership } from "@/lib/api";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import type { TreasuryStatus } from "@prisma/client";
 
 type Params = { society: string; id: string };
 
-// Claims are editable by the submitter while still DRAFT/AWAITING_APPROVAL, and by execs.
-const EDITABLE_STATUSES = ["DRAFT", "AWAITING_APPROVAL"];
+// Claims are editable/deletable by the submitter while still DRAFT/AWAITING_APPROVAL, and by execs.
+const EDITABLE_STATUSES: TreasuryStatus[] = ["DRAFT", "AWAITING_APPROVAL"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<Params> }) {
   const { session, error: authErr } = await requireAuth();
@@ -105,4 +106,77 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   }
 
   return NextResponse.json(updated);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<Params> }) {
+  const { session, error: authErr } = await requireAuth();
+  if (authErr) return authErr;
+
+  const { society, id } = await params;
+  const { membership, error: memErr } = await requireMembership(session!.user.id, society);
+  if (memErr) return memErr;
+
+  const request = await prisma.treasuryRequest.findUnique({ where: { id } });
+  if (!request || request.societyId !== membership!.societyId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const isExec = membership!.role === "EXECUTIVE";
+  const isOwner = request.submittedById === session!.user.id;
+  const canDelete = isExec || (isOwner && EDITABLE_STATUSES.includes(request.status));
+  if (!canDelete) {
+    return NextResponse.json({ error: "This claim can no longer be deleted" }, { status: 403 });
+  }
+
+  // Re-enforce the predicate atomically at delete time — the status may have
+  // changed since the check above (e.g. an exec approved the claim mid-flight).
+  const deleteWhere = {
+    id,
+    societyId: membership!.societyId,
+    ...(isExec ? {} : { submittedById: session!.user.id, status: { in: EDITABLE_STATUSES } }),
+  };
+
+  const NOT_DELETABLE = "CLAIM_NOT_DELETABLE";
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Approvals and receipts cascade; the comment thread's FK would only be
+      // nulled out, so remove it explicitly. Stale notification links would
+      // 404 once the claim is gone, so clear those too.
+      await tx.thread.deleteMany({ where: { treasuryRequest: { is: deleteWhere } } });
+      const deleted = await tx.treasuryRequest.deleteMany({ where: deleteWhere });
+      if (deleted.count === 0) throw new Error(NOT_DELETABLE);
+      await tx.notification.deleteMany({ where: { link: `/requests/treasury/${id}` } });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === NOT_DELETABLE) {
+      return NextResponse.json({ error: "This claim can no longer be deleted" }, { status: 403 });
+    }
+    throw err;
+  }
+
+  await createAuditLog({
+    societyId: membership!.societyId,
+    userId: session!.user.id,
+    action: "DELETE",
+    entityType: "TreasuryRequest",
+    entityId: id,
+    metadata: {
+      description: request.description,
+      amount: Number(request.amount),
+      status: request.status,
+      submittedById: request.submittedById,
+    },
+  });
+
+  if (!isOwner) {
+    await createNotification({
+      userId: request.submittedById,
+      type: "STATUS_CHANGE",
+      title: "Reimbursement Claim Deleted",
+      body: `Your claim for $${Number(request.amount).toFixed(2)} (${request.locationSupplier}) was deleted by an executive.`,
+      link: `/requests/treasury`,
+    });
+  }
+
+  return NextResponse.json({ ok: true });
 }
