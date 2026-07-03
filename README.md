@@ -10,6 +10,11 @@ Web app for running a university society committee: content requests, room booki
 - **Treasury** — reimbursement claims with amount-based multi-executive approval (≥ $50 needs the treasurer). Owners can edit claims and add/remove receipts while a claim is still pending. Bank details saved per user.
 - **Printing** — club printing requests costed against a per-tier secretarial budget (Bronze/Silver/Gold), approved by execs; approved requests draw down the budget.
 
+**Spending budget** (exec-only tab) — the yearly budget tracker, replacing the committee's spreadsheet:
+- **Current Year** — each category's 2026 budget vs live spend (summed from classified treasury claims), with % used/left bars and an unclassified bucket.
+- **History** — archival 2024/2025 budgets, 2025 usage, worst case, and the reasoning/notes behind each figure. Everything is editable in-app.
+- Submitters pick the category on the treasury form; execs can reclassify any claim from the budget tab.
+
 **Rubric portal** — reads events, ticket sales, members, grants, and settlements from Rubric, and submits events (including the Arc affiliation form). Executives see everything; directors see the Events tab only.
 
 **Platform**
