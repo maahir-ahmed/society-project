@@ -6,18 +6,20 @@ import { notifyExecs } from "@/lib/notifications";
 import { treasuryApprovalsNeeded } from "@/lib/permissions";
 import { z } from "zod";
 
+// Fields are optional so a partial claim can be saved as a DRAFT; the full set
+// is enforced below only when the claim is actually submitted for approval.
 const schema = z.object({
-  contactEmail: z.string().email(),
-  expenseDate: z.string(),
-  locationSupplier: z.string().min(1),
-  description: z.string().min(1),
-  amount: z.number().positive(),
+  contactEmail: z.union([z.string().email(), z.literal("")]).optional(),
+  expenseDate: z.string().optional(),
+  locationSupplier: z.string().optional(),
+  description: z.string().optional(),
+  amount: z.number().nonnegative().optional(),
   useExistingBank: z.boolean(),
   bankAccountName: z.string().nullable().optional(),
   bankBsb: z.string().nullable().optional(),
   bankAccountNumber: z.string().nullable().optional(),
   saveToProfile: z.boolean().optional(),
-  acknowledgedRules: z.boolean(),
+  acknowledgedRules: z.boolean().optional(),
   receiptUrls: z.array(z.string()).optional(),
   budgetCategoryId: z.string().nullable().optional(),
   status: z.enum(["DRAFT", "AWAITING_APPROVAL"]).default("AWAITING_APPROVAL"),
@@ -34,8 +36,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
   try {
     const body = schema.parse(await req.json());
 
-    if (!body.acknowledgedRules) {
-      return NextResponse.json({ error: "Must acknowledge reimbursement rules" }, { status: 400 });
+    // A draft can be saved partial; submitting for approval requires the full claim.
+    const isSubmitting = body.status === "AWAITING_APPROVAL";
+    if (isSubmitting) {
+      if (!body.acknowledgedRules) {
+        return NextResponse.json({ error: "Must acknowledge reimbursement rules" }, { status: 400 });
+      }
+      if (!body.contactEmail || !body.locationSupplier?.trim() || !body.description?.trim() || !body.expenseDate || !body.amount || body.amount <= 0) {
+        return NextResponse.json({ error: "Complete all fields before submitting for approval" }, { status: 400 });
+      }
     }
 
     // A chosen category must belong to this society.
@@ -73,14 +82,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
       data: {
         societyId: membership!.societyId,
         submittedById: session!.user.id,
-        contactEmail: body.contactEmail,
-        expenseDate: new Date(body.expenseDate),
-        locationSupplier: body.locationSupplier,
-        description: body.description,
-        amount: body.amount,
+        contactEmail: body.contactEmail || "",
+        expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
+        locationSupplier: body.locationSupplier || "",
+        description: body.description || "",
+        amount: body.amount ?? 0,
         bankAccountId,
         budgetCategoryId: body.budgetCategoryId ?? null,
-        acknowledgedRules: body.acknowledgedRules,
+        acknowledgedRules: body.acknowledgedRules ?? false,
         status: body.status, // "DRAFT" or "AWAITING_APPROVAL"
       },
     });
@@ -107,14 +116,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
       entityId: request.id,
     });
 
-    const needed = treasuryApprovalsNeeded(body.amount);
-    await notifyExecs(
-      membership!.societyId,
-      "APPROVAL_REQUIRED",
-      `New Reimbursement: $${body.amount.toFixed(2)} from ${session!.user.name}`,
-      `Requires ${needed} approval${needed > 1 ? "s" : ""}${body.amount >= 50 ? " including the Treasurer" : ""}.`,
-      `/requests/treasury/${request.id}`
-    );
+    // Drafts aren't in the queue yet — only alert execs on a real submission.
+    if (isSubmitting) {
+      const amt = body.amount ?? 0;
+      const needed = treasuryApprovalsNeeded(amt);
+      await notifyExecs(
+        membership!.societyId,
+        "APPROVAL_REQUIRED",
+        `New Reimbursement: $${amt.toFixed(2)} from ${session!.user.name}`,
+        `Requires ${needed} approval${needed > 1 ? "s" : ""}${amt >= 50 ? " including the Treasurer" : ""}.`,
+        `/requests/treasury/${request.id}`
+      );
+    }
 
     return NextResponse.json(request, { status: 201 });
   } catch (err) {

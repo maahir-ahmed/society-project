@@ -37,6 +37,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: "Only executives can change status" }, { status: 403 });
   }
 
+  // A draft can only be submitted once it's a complete claim. Checks the stored
+  // values (submit requests carry only { status }, not field edits).
+  if (body.status === "AWAITING_APPROVAL" && request.status === "DRAFT") {
+    if (Number(request.amount) <= 0 || !request.description.trim() || !request.locationSupplier.trim() || !request.contactEmail.trim()) {
+      return NextResponse.json(
+        { error: "Complete the claim (amount, description, supplier, contact email) before submitting." },
+        { status: 400 }
+      );
+    }
+  }
+
   // Only execs classify a claim into a budget category. null = unclassify.
   if (body.budgetCategoryId !== undefined) {
     if (!isExec) {

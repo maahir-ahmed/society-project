@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export default function NewTreasuryPage() {
   const [savedAccount, setSavedAccount] = useState<BankAccount | null | undefined>(undefined);
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
   const [categoryId, setCategoryId] = useState<string>(UNCLASSIFIED);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Fetch the user's bank account on mount
   useEffect(() => {
@@ -65,14 +66,15 @@ export default function NewTreasuryPage() {
       .catch(() => setCategories([]));
   }, [params.society]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!acknowledged) {
+  async function submit(status: "DRAFT" | "AWAITING_APPROVAL") {
+    if (!formRef.current) return;
+    // The rules acknowledgement is only required to actually submit, not to draft.
+    if (status === "AWAITING_APPROVAL" && !acknowledged) {
       toast.error("You must acknowledge the reimbursement rules");
       return;
     }
     setLoading(true);
-    const form = new FormData(e.currentTarget);
+    const form = new FormData(formRef.current);
 
     // Upload files first
     const fileUrls: string[] = [];
@@ -91,12 +93,12 @@ export default function NewTreasuryPage() {
       expenseDate: form.get("expenseDate"),
       locationSupplier: form.get("locationSupplier"),
       description: form.get("description"),
-      amount: Number(form.get("amount")),
+      amount: Number(form.get("amount")) || 0,
       useExistingBank: useExisting && !!savedAccount,
-      acknowledgedRules: true,
+      acknowledgedRules: acknowledged,
       receiptUrls: fileUrls,
       budgetCategoryId: categoryId === UNCLASSIFIED ? null : categoryId,
-      status: "AWAITING_APPROVAL",
+      status,
     };
 
     if (!useExisting || !savedAccount) {
@@ -115,11 +117,11 @@ export default function NewTreasuryPage() {
     setLoading(false);
     if (res.ok) {
       const data = await res.json();
-      toast.success("Reimbursement claim submitted!");
+      toast.success(status === "DRAFT" ? "Draft saved" : "Reimbursement claim submitted!");
       router.push(`/${params.society}/requests/treasury/${data.id}`);
     } else {
       const data = await res.json();
-      toast.error(data.error ?? "Failed to submit claim");
+      toast.error(data.error ?? "Failed to save claim");
     }
   }
 
@@ -167,7 +169,7 @@ export default function NewTreasuryPage() {
         </CardContent>
       </Card>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={(e) => { e.preventDefault(); submit("AWAITING_APPROVAL"); }} className="space-y-6">
         {/* Expense Details */}
         <Card>
           <CardHeader><CardTitle className="text-base">Expense Details</CardTitle></CardHeader>
@@ -333,6 +335,14 @@ export default function NewTreasuryPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={loading || !acknowledged || savedAccount === undefined}>
             {loading ? "Submitting…" : "Submit Claim"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => submit("DRAFT")}
+            disabled={loading || savedAccount === undefined}
+          >
+            {loading ? "Saving…" : "Save as draft"}
           </Button>
           <Button asChild variant="ghost">
             <Link href={`/${params.society}/requests/treasury`}>Cancel</Link>
