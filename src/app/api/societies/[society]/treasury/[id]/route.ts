@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, requireMembership } from "@/lib/api";
 import { createAuditLog } from "@/lib/audit";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, notifyExecs } from "@/lib/notifications";
+import { treasuryApprovalsNeeded } from "@/lib/permissions";
 import type { TreasuryStatus } from "@prisma/client";
 
 type Params = { society: string; id: string };
@@ -28,8 +29,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   const isOwner = request.submittedById === session!.user.id;
   const canEdit = isExec || (isOwner && EDITABLE_STATUSES.includes(request.status));
 
-  // Only execs can change status.
-  if (body.status !== undefined && !isExec) {
+  // Owners may submit their own draft (DRAFT -> AWAITING_APPROVAL); every other
+  // status change is exec-only.
+  const isOwnerSubmit =
+    isOwner && !isExec && request.status === "DRAFT" && body.status === "AWAITING_APPROVAL";
+  if (body.status !== undefined && !isExec && !isOwnerSubmit) {
     return NextResponse.json({ error: "Only executives can change status" }, { status: 403 });
   }
 
@@ -56,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   const updated = await prisma.treasuryRequest.update({
     where: { id },
     data: {
-      ...(isExec && body.status ? { status: body.status } : {}),
+      ...((isExec || isOwnerSubmit) && body.status ? { status: body.status } : {}),
       ...(canEdit && body.contactEmail !== undefined ? { contactEmail: body.contactEmail } : {}),
       ...(canEdit && body.expenseDate !== undefined ? { expenseDate: new Date(body.expenseDate) } : {}),
       ...(canEdit && body.locationSupplier !== undefined ? { locationSupplier: body.locationSupplier } : {}),
@@ -95,7 +99,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     ...(body.status ? { metadata: { from: request.status, to: body.status } } : {}),
   });
 
-  if (body.status && body.status !== request.status) {
+  // Entering approval (a draft being submitted) alerts the execs, exactly like a
+  // brand-new claim does.
+  if (body.status === "AWAITING_APPROVAL" && request.status === "DRAFT") {
+    const amt = Number(updated.amount);
+    const needed = treasuryApprovalsNeeded(amt);
+    await notifyExecs(
+      membership!.societyId,
+      "APPROVAL_REQUIRED",
+      `New Reimbursement: $${amt.toFixed(2)} from ${session!.user.name}`,
+      `Requires ${needed} approval${needed > 1 ? "s" : ""}${amt >= 50 ? " including the Treasurer" : ""}.`,
+      `/requests/treasury/${id}`
+    );
+  }
+
+  // Notify the submitter of a status change made by someone else (not self).
+  if (body.status && body.status !== request.status && request.submittedById !== session!.user.id) {
     await createNotification({
       userId: request.submittedById,
       type: "STATUS_CHANGE",

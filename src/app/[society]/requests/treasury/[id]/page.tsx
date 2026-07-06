@@ -10,6 +10,7 @@ import { ThreadView } from "@/components/requests/ThreadView";
 import { TreasuryApprovalPanel } from "@/components/requests/TreasuryApprovalPanel";
 import { EditTreasuryClaim } from "@/components/requests/EditTreasuryClaim";
 import { DeleteTreasuryClaim } from "@/components/requests/DeleteTreasuryClaim";
+import { SubmitClaimButton } from "@/components/requests/SubmitClaimButton";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils";
 import { treasuryApprovalsNeeded, treasuryNeedsTreasurer, isTreasuryApproved } from "@/lib/permissions";
@@ -84,6 +85,9 @@ export default async function TreasuryDetailPage({ params }: Props) {
         </div>
         {canEdit && (
           <div className="flex items-center gap-2">
+            {request.status === "DRAFT" && (
+              <SubmitClaimButton societySlug={societySlug} requestId={request.id} />
+            )}
             <EditTreasuryClaim
               societySlug={societySlug}
               requestId={request.id}
