@@ -21,8 +21,7 @@ interface Props {
 }
 
 const STATUSES: TreasuryStatus[] = [
-  "DRAFT", "SUBMITTED", "AWAITING_APPROVAL", "APPROVED",
-  "REJECTED", "REIMBURSEMENT_PENDING", "REIMBURSED",
+  "DRAFT", "AWAITING_APPROVAL", "REJECTED", "REIMBURSEMENT_PENDING", "REIMBURSED",
 ];
 
 export default async function TreasuryDetailPage({ params }: Props) {

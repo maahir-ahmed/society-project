@@ -91,9 +91,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Par
     where: { treasuryRequestId_approvedById: { treasuryRequestId: id, approvedById: session!.user.id } },
   });
 
-  // If was fully approved, revert to awaiting
+  // If it had auto-advanced to reimbursement-pending, revert to awaiting.
   const request = await prisma.treasuryRequest.findUnique({ where: { id } });
-  if (request?.status === "APPROVED" || request?.status === "REIMBURSEMENT_PENDING") {
+  if (request?.status === "REIMBURSEMENT_PENDING") {
     await prisma.treasuryRequest.update({ where: { id }, data: { status: "AWAITING_APPROVAL" } });
   }
 

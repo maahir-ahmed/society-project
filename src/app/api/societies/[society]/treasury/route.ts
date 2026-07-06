@@ -20,7 +20,7 @@ const schema = z.object({
   acknowledgedRules: z.boolean(),
   receiptUrls: z.array(z.string()).optional(),
   budgetCategoryId: z.string().nullable().optional(),
-  status: z.enum(["DRAFT", "SUBMITTED"]).default("SUBMITTED"),
+  status: z.enum(["DRAFT", "AWAITING_APPROVAL"]).default("AWAITING_APPROVAL"),
 });
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ society: string }> }) {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
         bankAccountId,
         budgetCategoryId: body.budgetCategoryId ?? null,
         acknowledgedRules: body.acknowledgedRules,
-        status: body.status === "SUBMITTED" ? "AWAITING_APPROVAL" : "DRAFT",
+        status: body.status, // "DRAFT" or "AWAITING_APPROVAL"
       },
     });
 

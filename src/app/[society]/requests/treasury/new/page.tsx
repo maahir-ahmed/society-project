@@ -96,7 +96,7 @@ export default function NewTreasuryPage() {
       acknowledgedRules: true,
       receiptUrls: fileUrls,
       budgetCategoryId: categoryId === UNCLASSIFIED ? null : categoryId,
-      status: "SUBMITTED",
+      status: "AWAITING_APPROVAL",
     };
 
     if (!useExisting || !savedAccount) {

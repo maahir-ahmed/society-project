@@ -36,9 +36,7 @@ enum RoomBookingStatus {
 
 enum TreasuryStatus {
   DRAFT
-  SUBMITTED
   AWAITING_APPROVAL
-  APPROVED
   REJECTED
   REIMBURSEMENT_PENDING
   REIMBURSED

@@ -90,7 +90,7 @@ export function TreasuryApprovalPanel({
   }
 
   const canApprove = isExec && currentStatus === "AWAITING_APPROVAL";
-  const canReject = isExec && (currentStatus === "AWAITING_APPROVAL" || currentStatus === "SUBMITTED");
+  const canReject = isExec && currentStatus === "AWAITING_APPROVAL";
 
   return (
     <Card>
