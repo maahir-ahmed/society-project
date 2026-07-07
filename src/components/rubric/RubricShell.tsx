@@ -14,6 +14,7 @@ const TABS = [
   { href: "/merch", label: "Merch & Orders" },
   { href: "/grants", label: "Grants" },
   { href: "/settlements", label: "Settlements" },
+  { href: "/web", label: "Web Portal" },
 ];
 
 interface RubricShellProps {
