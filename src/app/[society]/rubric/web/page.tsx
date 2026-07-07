@@ -8,7 +8,7 @@ import { ExternalLink } from "lucide-react";
 // embeds here. We can't auto-login the frame: the stored session id is an API-body
 // token for api.hellorubric.com, not a cookie for this site, and the browser won't
 // let us set cross-origin cookies — hence the always-works "open in new tab".
-const RUBRIC_URL = "https://campus.hellorubric.com/";
+const RUBRIC_URL = "https://portal.hellorubric.com/";
 
 export default async function RubricWebPage({ params }: { params: Promise<{ society: string }> }) {
   const { society } = await params;
