@@ -128,30 +128,31 @@ export default async function ExecutiveQueuePage({ params }: Props) {
           </h2>
           <div className="space-y-2">
             {roomPending.map((b) => (
-              <Link key={b.id} href={`/${societySlug}/requests/room-booking/${b.id}`}>
-                <Card className="hover:border-purple-300 transition-colors cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <UserAvatar name={b.submittedBy.name} avatarUrl={b.submittedBy.avatarUrl} size="sm" />
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">{b.eventName}</p>
-                          <div className="text-xs text-muted-foreground flex gap-2">
-                            <span>{formatDate(b.preferredDate)}</span>
-                            <span>{b.startTime}–{b.endTime}</span>
-                          </div>
+              <Card key={b.id} className="hover:border-purple-300 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Link href={`/${societySlug}/requests/room-booking/${b.id}`} className="flex items-center gap-3 min-w-0 flex-1">
+                      <UserAvatar name={b.submittedBy.name} avatarUrl={b.submittedBy.avatarUrl} size="sm" />
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{b.eventName}</p>
+                        <div className="text-xs text-muted-foreground flex gap-2">
+                          <span>{formatDate(b.preferredDate)}</span>
+                          <span>{b.startTime}–{b.endTime}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <StatusBadge status={b.status} />
-                        {b.assignedTo && (
-                          <UserAvatar name={b.assignedTo.name} avatarUrl={b.assignedTo.avatarUrl} size="sm" />
-                        )}
-                      </div>
+                    </Link>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <StatusBadge status={b.status} />
+                      {b.assignedTo && (
+                        <UserAvatar name={b.assignedTo.name} avatarUrl={b.assignedTo.avatarUrl} size="sm" />
+                      )}
+                      <Button asChild size="sm" variant="outline" className="text-xs border-purple-300">
+                        <Link href={`/${societySlug}/rubric/web?type=room&id=${b.id}`}>Submit on Rubric →</Link>
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
@@ -225,29 +226,29 @@ export default async function ExecutiveQueuePage({ params }: Props) {
           </h2>
           <div className="space-y-2">
             {printingPending.map((p) => (
-              <Link key={p.id} href={`/${societySlug}/requests/printing/${p.id}`}>
-                <Card className="hover:border-blue-300 transition-colors cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <UserAvatar name={p.submittedBy.name} avatarUrl={p.submittedBy.avatarUrl} size="sm" />
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">
-                            {p.quantity}× {p.pages}pp {p.paperSize} {p.colour === "BW" ? "B&W" : "Colour"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.submittedBy.name} · pickup {formatDate(p.pickupAt)}
-                          </p>
-                        </div>
+              <Card key={p.id} className="hover:border-blue-300 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Link href={`/${societySlug}/requests/printing/${p.id}`} className="flex items-center gap-3 min-w-0 flex-1">
+                      <UserAvatar name={p.submittedBy.name} avatarUrl={p.submittedBy.avatarUrl} size="sm" />
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">
+                          {p.quantity}× {p.pages}pp {p.paperSize} {p.colour === "BW" ? "B&W" : "Colour"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.submittedBy.name} · pickup {formatDate(p.pickupAt)}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="font-medium text-green-700">{formatCurrency(Number(p.cost))}</span>
-                        <Button size="sm" className="text-xs">Review</Button>
-                      </div>
+                    </Link>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="font-medium text-green-700">{formatCurrency(Number(p.cost))}</span>
+                      <Button asChild size="sm" variant="outline" className="text-xs border-blue-300">
+                        <Link href={`/${societySlug}/rubric/web?type=printing&id=${p.id}`}>Submit on Rubric →</Link>
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>

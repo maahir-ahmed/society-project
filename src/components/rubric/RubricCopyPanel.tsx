@@ -13,10 +13,23 @@ export interface CopyRecord {
 
 // Shows room booking / printing details beside the embedded Rubric portal so the
 // info can be copied field-by-field into Rubric's (cross-origin) web forms.
-export function RubricCopyPanel({ bookings, printing }: { bookings: CopyRecord[]; printing: CopyRecord[] }) {
-  const [tab, setTab] = useState<"room" | "printing">("room");
+export function RubricCopyPanel({
+  bookings,
+  printing,
+  initialTab = "room",
+  initialId,
+}: {
+  bookings: CopyRecord[];
+  printing: CopyRecord[];
+  initialTab?: "room" | "printing";
+  initialId?: string;
+}) {
+  const [tab, setTab] = useState<"room" | "printing">(initialTab);
   const records = tab === "room" ? bookings : printing;
-  const [id, setId] = useState<string>(bookings[0]?.id ?? "");
+  const initialRecords = initialTab === "room" ? bookings : printing;
+  const [id, setId] = useState<string>(
+    initialId && initialRecords.some((r) => r.id === initialId) ? initialId : initialRecords[0]?.id ?? ""
+  );
   const record = records.find((r) => r.id === id) ?? records[0];
 
   function switchTab(t: "room" | "printing") {

@@ -20,8 +20,15 @@ const SIDED: Record<string, string> = {
 };
 const COLOUR: Record<string, string> = { BW: "Black & white", COLOUR: "Colour" };
 
-export default async function RubricWebPage({ params }: { params: Promise<{ society: string }> }) {
+export default async function RubricWebPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ society: string }>;
+  searchParams: Promise<{ type?: string; id?: string }>;
+}) {
   const { society } = await params;
+  const sp = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -111,7 +118,12 @@ export default async function RubricWebPage({ params }: { params: Promise<{ soci
             title="Rubric portal"
             className="h-[70vh] w-full rounded-lg border bg-white lg:h-full lg:flex-1"
           />
-          <RubricCopyPanel bookings={bookings} printing={printing} />
+          <RubricCopyPanel
+            bookings={bookings}
+            printing={printing}
+            initialTab={sp.type === "printing" ? "printing" : "room"}
+            initialId={sp.id}
+          />
         </div>
       </div>
     </RubricShell>
