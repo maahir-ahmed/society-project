@@ -108,27 +108,19 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<Pa
     return NextResponse.json({ error: "This request can no longer be deleted" }, { status: 403 });
   }
 
-  // Re-enforce the predicate atomically at delete time, and clear stale
-  // notification links that would 404 once the request is gone.
-  const deleteWhere = {
-    id,
-    societyId: membership!.societyId,
-    ...(isExec ? {} : { submittedById: session!.user.id, status: "PENDING_APPROVAL" as PrintingStatus }),
-  };
-
-  const NOT_DELETABLE = "REQUEST_NOT_DELETABLE";
-  try {
-    await prisma.$transaction(async (tx) => {
-      const deleted = await tx.printingRequest.deleteMany({ where: deleteWhere });
-      if (deleted.count === 0) throw new Error(NOT_DELETABLE);
-      await tx.notification.deleteMany({ where: { link: `/requests/printing/${id}` } });
-    });
-  } catch (err) {
-    if (err instanceof Error && err.message === NOT_DELETABLE) {
-      return NextResponse.json({ error: "This request can no longer be deleted" }, { status: 403 });
-    }
-    throw err;
+  // The where clause IS the authorization check, re-enforced atomically at
+  // delete time. Notification cleanup after: nothing to roll back here.
+  const deleted = await prisma.printingRequest.deleteMany({
+    where: {
+      id,
+      societyId: membership!.societyId,
+      ...(isExec ? {} : { submittedById: session!.user.id, status: "PENDING_APPROVAL" as PrintingStatus }),
+    },
+  });
+  if (deleted.count === 0) {
+    return NextResponse.json({ error: "This request can no longer be deleted" }, { status: 403 });
   }
+  await prisma.notification.deleteMany({ where: { link: `/requests/printing/${id}` } });
 
   await createAuditLog({
     societyId: membership!.societyId,

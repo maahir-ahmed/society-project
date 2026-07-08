@@ -10,11 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 
 interface Props {
-  societySlug: string;
-  requestId: string;
+  endpoint: string; // DELETE target
+  redirect: string; // list page to return to on success
+  title: string;
+  description: string;
+  successMessage: string;
+  confirmLabel: string;
 }
 
-export function DeletePrintingRequest({ societySlug, requestId }: Props) {
+// Confirm-dialog delete button shared by all request types.
+export function ConfirmDelete({ endpoint, redirect, title, description, successMessage, confirmLabel }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -22,20 +27,18 @@ export function DeletePrintingRequest({ societySlug, requestId }: Props) {
   async function remove() {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/societies/${societySlug}/printing/${requestId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(endpoint, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Printing request deleted");
+        toast.success(successMessage);
         setOpen(false);
-        router.push(`/${societySlug}/requests/printing`);
+        router.push(redirect);
         router.refresh();
       } else {
         const d = await res.json().catch(() => ({}));
-        toast.error(d.error ?? "Failed to delete request");
+        toast.error(d.error ?? "Failed to delete");
       }
     } catch {
-      toast.error("Failed to delete request");
+      toast.error("Failed to delete");
     } finally {
       setDeleting(false);
     }
@@ -50,16 +53,13 @@ export function DeletePrintingRequest({ societySlug, requestId }: Props) {
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete this printing request?</DialogTitle>
-          <DialogDescription>
-            This permanently removes the request. If it was already approved, its cost no longer counts
-            against the secretarial allowance. This cannot be undone.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button variant="destructive" onClick={remove} disabled={deleting}>
-            {deleting ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Deleting…</> : "Delete request"}
+            {deleting ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Deleting…</> : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

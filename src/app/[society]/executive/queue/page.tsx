@@ -258,13 +258,7 @@ export default async function ExecutiveQueuePage({ params }: Props) {
                         </Button>
                       )}
                       {p.status === "SUBMITTED" && (
-                        <PrintingStageButton
-                          societySlug={societySlug}
-                          requestId={p.id}
-                          action="mark_ready"
-                          label="Ready for pickup"
-                          successMessage="Marked as ready for pickup"
-                        />
+                        <PrintingStageButton societySlug={societySlug} requestId={p.id} action="mark_ready" />
                       )}
                     </div>
                   </div>

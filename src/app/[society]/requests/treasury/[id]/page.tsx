@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/shared/UserAvatar";
 import { ThreadView } from "@/components/requests/ThreadView";
 import { TreasuryApprovalPanel } from "@/components/requests/TreasuryApprovalPanel";
 import { EditTreasuryClaim } from "@/components/requests/EditTreasuryClaim";
-import { DeleteTreasuryClaim } from "@/components/requests/DeleteTreasuryClaim";
+import { ConfirmDelete } from "@/components/requests/ConfirmDelete";
 import { ClaimCategoryCard } from "@/components/requests/ClaimCategoryCard";
 import { SubmitClaimButton } from "@/components/requests/SubmitClaimButton";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
@@ -113,7 +113,14 @@ export default async function TreasuryDetailPage({ params }: Props) {
               }}
               receipts={request.receipts.map((r) => ({ id: r.id, fileName: r.fileName, fileUrl: r.fileUrl }))}
             />
-            <DeleteTreasuryClaim societySlug={societySlug} requestId={request.id} />
+            <ConfirmDelete
+              endpoint={`/api/societies/${societySlug}/treasury/${request.id}`}
+              redirect={`/${societySlug}/requests/treasury`}
+              title="Delete this claim?"
+              description="This permanently removes the claim along with its receipts, approvals and comments. This cannot be undone."
+              successMessage="Claim deleted"
+              confirmLabel="Delete claim"
+            />
           </div>
         )}
       </div>

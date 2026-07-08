@@ -6,16 +6,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+const STAGES = {
+  mark_submitted: { label: "Mark submitted", success: "Marked as submitted to Arc" },
+  mark_ready: { label: "Ready for pickup", success: "Marked as ready for pickup" },
+} as const;
+
 interface Props {
   societySlug: string;
   requestId: string;
-  action: "mark_submitted" | "mark_ready";
-  label: string;
-  successMessage: string;
+  action: keyof typeof STAGES;
 }
 
 // Advances a printing request one lifecycle stage (exec-only actions).
-export function PrintingStageButton({ societySlug, requestId, action, label, successMessage }: Props) {
+export function PrintingStageButton({ societySlug, requestId, action }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -28,7 +31,7 @@ export function PrintingStageButton({ societySlug, requestId, action, label, suc
         body: JSON.stringify({ action }),
       });
       if (res.ok) {
-        toast.success(successMessage);
+        toast.success(STAGES[action].success);
         router.refresh();
       } else {
         const d = await res.json().catch(() => ({}));
@@ -44,7 +47,7 @@ export function PrintingStageButton({ societySlug, requestId, action, label, suc
   return (
     <Button onClick={advance} disabled={busy} size="sm" className="gap-1.5 text-xs">
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-      {label}
+      {STAGES[action].label}
     </Button>
   );
 }

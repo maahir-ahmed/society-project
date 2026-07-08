@@ -21,9 +21,9 @@ const schema = z.object({
   accountNumber: z.string().trim().min(3).max(30),
 });
 
-// Saves the user's bank details. Existing accounts referenced by past claims are
-// kept intact (a new default row is created instead), so reimbursement history
-// still shows the details the claim was actually paid to.
+// Saves the user's bank details as a fresh default row. Old rows are left
+// intact so claims referencing them keep the details they were paid to.
+// ponytail: one row per save; prune old unreferenced rows if it ever matters
 export async function PUT(req: NextRequest) {
   const { session, error } = await requireAuth();
   if (error) return error;
@@ -32,25 +32,8 @@ export async function PUT(req: NextRequest) {
   try {
     const body = schema.parse(await req.json());
 
-    const account = await prisma.$transaction(async (tx) => {
-      const current = await tx.bankAccount.findFirst({
-        where: { userId },
-        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-      });
-
-      if (current) {
-        const referenced = await tx.treasuryRequest.count({ where: { bankAccountId: current.id } });
-        if (referenced === 0) {
-          return tx.bankAccount.update({
-            where: { id: current.id },
-            data: { ...body, isDefault: true },
-          });
-        }
-      }
-
-      await tx.bankAccount.updateMany({ where: { userId }, data: { isDefault: false } });
-      return tx.bankAccount.create({ data: { userId, ...body, isDefault: true } });
-    });
+    await prisma.bankAccount.updateMany({ where: { userId }, data: { isDefault: false } });
+    const account = await prisma.bankAccount.create({ data: { userId, ...body, isDefault: true } });
 
     return NextResponse.json(account);
   } catch (err) {
