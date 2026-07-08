@@ -12,6 +12,7 @@ import { MarketingContentPanel } from "@/components/requests/MarketingContentPan
 import { RubricForm } from "./RubricForm";
 import { RubricQrCode } from "@/components/requests/RubricQrCode";
 import { SubmitToRubricDialog } from "@/components/requests/SubmitToRubricDialog";
+import { AssignRubricEvent } from "@/components/requests/AssignRubricEvent";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ArrowLeft, Calendar, MapPin, Clock, QrCode, ExternalLink, Send, Pencil } from "lucide-react";
 import type { ContentRequestStatus } from "@prisma/client";
@@ -204,13 +205,35 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                 {/* Manual link attachment */}
                 {request.rubricEventLink ? (
                   <div className="space-y-3">
-                    <a href={request.rubricEventLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                      <ExternalLink className="h-4 w-4" /> View Rubric Event
-                    </a>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <a href={request.rubricEventLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                        <ExternalLink className="h-4 w-4" /> View Rubric Event
+                      </a>
+                      {request.rubricEventId && (
+                        <Link
+                          href={`/${societySlug}/rubric/events/${request.rubricEventId}`}
+                          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        >
+                          <ExternalLink className="h-4 w-4" /> Attendance &amp; stats
+                        </Link>
+                      )}
+                    </div>
+                    {isExec && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Activity grant:</span>
+                        <StatusBadge status={request.activityGrantStatus} />
+                        <Link href={`/${societySlug}/rubric/web?type=grants&id=${request.id}`} className="text-blue-600 hover:underline text-xs">
+                          Manage on web portal →
+                        </Link>
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium mb-2">QR Code</p>
                       <RubricQrCode value={request.rubricEventLink} />
                     </div>
+                    {isExec && !request.rubricEventId && (
+                      <AssignRubricEvent societySlug={societySlug} contentRequestId={request.id} />
+                    )}
                     {isExec && (
                       <details className="text-sm">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Update Rubric link</summary>
@@ -240,6 +263,7 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                           defaultEndDate={request.endDate}
                           alreadySubmitted={request.rubricSubmittedAt}
                         />
+                        <AssignRubricEvent societySlug={societySlug} contentRequestId={request.id} />
                         <details className="text-sm">
                           <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                             Or attach an existing Rubric event link manually

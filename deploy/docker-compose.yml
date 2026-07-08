@@ -39,7 +39,9 @@ services:
     # Sync schema (idempotent) then start the server — no separate migrate container to clean up.
     # $$ escapes compose interpolation so sh expands the runtime DATABASE_URL.
     # ponytail: db push + --accept-data-loss; ceiling = destructive schema change applies silently.
-    command: sh -c "npx prisma db push --schema=prisma/schema.prisma --url \"$$DATABASE_URL\" --accept-data-loss && node server.js"
+    # Data fixes run first (guarded/idempotent SQL, e.g. enum remaps db push can't do);
+    # each file needs its own `db execute` — new enum values aren't usable in the txn that adds them.
+    command: sh -c "npx prisma db execute --file prisma/data-fixes/2026-07-printing-status-1-add-values.sql --url \"$$DATABASE_URL\" && npx prisma db execute --file prisma/data-fixes/2026-07-printing-status-2-remap.sql --url \"$$DATABASE_URL\" && npx prisma db push --schema=prisma/schema.prisma --url \"$$DATABASE_URL\" --accept-data-loss && node server.js"
     ports:
       - "${APP_PORT}:3000"   # cloudflared hits host.docker.internal:${APP_PORT}
     environment:

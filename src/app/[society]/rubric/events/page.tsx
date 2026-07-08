@@ -11,34 +11,7 @@ import { SubmitToRubricDialog } from "@/components/requests/SubmitToRubricDialog
 import { Loader2, AlertCircle, ExternalLink, Calendar, Ticket, Eye, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { useRubricClient } from "@/hooks/useRubricClient";
-
-interface RubricEvent {
-  eventid?: number | string;
-  eventname?: string;
-  eventTime?: string;
-  bannerurl?: string;
-  purchaseurl?: string;
-  totalScanned?: number;
-  totalpaid?: number;
-  totalrev?: string;
-  draft?: boolean;
-  private?: boolean;
-}
-
-// Events come back grouped under `eventdetails` by category/year. Flatten all the
-// event arrays and dedupe by eventid (categories overlap, e.g. "2026" + "Recently Updated").
-function flattenEvents(d: Record<string, unknown>): RubricEvent[] {
-  const details = d.eventdetails as Record<string, unknown> | undefined;
-  if (!details) return [];
-  const byId = new Map<number | string, RubricEvent>();
-  for (const val of Object.values(details)) {
-    if (!Array.isArray(val)) continue;
-    for (const ev of val as RubricEvent[]) {
-      if (ev?.eventid != null && !byId.has(ev.eventid)) byId.set(ev.eventid, ev);
-    }
-  }
-  return [...byId.values()].sort((a, b) => (b.eventTime ?? "").localeCompare(a.eventTime ?? ""));
-}
+import { flattenEvents, type RubricEvent } from "@/lib/rubricEvents";
 
 export default function RubricEventsPage() {
   const params = useParams<{ society: string }>();

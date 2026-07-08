@@ -7,6 +7,7 @@ import { RubricShell } from "@/components/rubric/RubricShell";
 import { RubricNotConfigured } from "@/components/rubric/RubricNotConfigured";
 import { Loader2, TrendingUp, Users, Package, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
 import { useRubricClient } from "@/hooks/useRubricClient";
+import { flattenEvents } from "@/lib/rubricEvents";
 import { formatCurrency } from "@/lib/utils";
 
 interface OverviewData {
@@ -14,20 +15,6 @@ interface OverviewData {
   ticketing: Record<string, unknown> | null;
   settlement: Record<string, unknown> | null;
   team: Record<string, unknown> | null;
-}
-
-// Events come back grouped under `eventdetails`; flatten + dedupe by eventid.
-function flattenEvents(d: Record<string, unknown> | null): Record<string, unknown>[] {
-  const details = d?.eventdetails as Record<string, unknown> | undefined;
-  if (!details) return [];
-  const byId = new Map<unknown, Record<string, unknown>>();
-  for (const val of Object.values(details)) {
-    if (!Array.isArray(val)) continue;
-    for (const ev of val as Record<string, unknown>[]) {
-      if (ev?.eventid != null && !byId.has(ev.eventid)) byId.set(ev.eventid, ev);
-    }
-  }
-  return [...byId.values()];
 }
 
 function StatCard({ label, value, icon: Icon, color = "blue" }: {

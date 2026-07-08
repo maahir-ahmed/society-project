@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, requireMembership } from "@/lib/api";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { ActivityGrantStatus } from "@prisma/client";
 
 type Params = { society: string; id: string };
 
@@ -33,10 +34,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (
+    body.activityGrantStatus !== undefined &&
+    !Object.values(ActivityGrantStatus).includes(body.activityGrantStatus)
+  ) {
+    return NextResponse.json({ error: "Invalid grant status" }, { status: 400 });
+  }
+
   const updated = await prisma.contentRequest.update({
     where: { id },
     data: {
       ...(canManage && body.status ? { status: body.status } : {}),
+      ...(canManage && body.activityGrantStatus ? { activityGrantStatus: body.activityGrantStatus } : {}),
       ...(canEditCore && typeof body.eventName === "string" ? { eventName: body.eventName } : {}),
       ...(canEditCore && body.startDate ? { startDate: new Date(body.startDate) } : {}),
       ...(canEditCore && body.endDate !== undefined ? { endDate: body.endDate ? new Date(body.endDate) : null } : {}),

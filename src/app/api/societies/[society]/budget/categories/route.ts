@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ soc
 
 const nullableMoney = z.number().min(0).nullable().optional();
 const createSchema = z.object({
-  name: z.string().min(1).max(80),
+  name: z.string().trim().min(1).max(80),
   group: z.enum(["PORTFOLIO", "OTHER"]).optional(),
   yearlyBudget: z.number().min(0).default(0),
   budget2024: nullableMoney,

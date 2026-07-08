@@ -29,7 +29,7 @@ const navItems = [
   },
   {
     href: "/requests/content",
-    label: "Content Requests",
+    label: "Content Requests / Events",
     icon: FileText,
   },
   {

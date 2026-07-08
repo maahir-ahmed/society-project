@@ -24,6 +24,15 @@ enum ContentRequestStatus {
   CANCELLED
 }
 
+// Arc activity grant lifecycle for an event (tracked per content request).
+enum ActivityGrantStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
 enum RoomBookingStatus {
   SUBMITTED
   UNDER_REVIEW
@@ -51,9 +60,13 @@ enum PreferredLocation {
   OTHER
 }
 
+// Flow: PENDING_APPROVAL -> (exec approves) PENDING_ARC_SUBMISSION -> (submitted
+// on the Arc web portal) SUBMITTED -> READY_FOR_PICKUP. Rejection is terminal.
 enum PrintingStatus {
+  PENDING_APPROVAL
+  PENDING_ARC_SUBMISSION
   SUBMITTED
-  APPROVED
+  READY_FOR_PICKUP
   REJECTED
 }
 
@@ -243,6 +256,7 @@ model ContentRequest {
   rubricQrCodeUrl String?
   rubricEventId   String?
   rubricSubmittedAt DateTime?
+  activityGrantStatus ActivityGrantStatus @default(NOT_SUBMITTED)
   finishedBlurb   String?              @db.Text   // marketing pastes the final event blurb here
   bannerDone      Boolean              @default(false)
   blurbDone       Boolean              @default(false)
@@ -382,7 +396,7 @@ model PrintingRequest {
   fileName        String
   additionalDetails String?      @db.Text
   cost            Decimal        @db.Decimal(10, 2)
-  status          PrintingStatus @default(SUBMITTED)
+  status          PrintingStatus @default(PENDING_APPROVAL)
   decidedById     String?
   decidedAt       DateTime?
   createdAt       DateTime       @default(now())
@@ -481,6 +495,8 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+  // Delete handlers clean up stale notifications by link.
+  @@index([link])
 }
 
 // ─── Announcements ────────────────────────────────────────────────────────────

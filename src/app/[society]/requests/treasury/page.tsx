@@ -98,7 +98,10 @@ export default async function TreasuryPage({ params }: Props) {
                         </div>
                       </div>
                       <div className="flex-shrink-0">
-                        <StatusBadge status={r.status} />
+                        <StatusBadge
+                          status={r.status}
+                          detail={r.status === "AWAITING_APPROVAL" ? `${approved}/${needed} approved` : undefined}
+                        />
                       </div>
                     </div>
                   </CardContent>

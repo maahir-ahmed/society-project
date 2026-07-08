@@ -14,16 +14,29 @@ interface Me {
   email: string;
 }
 
+interface BankAccount {
+  accountName: string;
+  bsb: string;
+  accountNumber: string;
+}
+
 export default function AccountPage() {
   const { update } = useSession();
   const [me, setMe] = useState<Me | null>(null);
+  // undefined = still loading (gates render so the form's defaultValues are correct)
+  const [bank, setBank] = useState<BankAccount | null | undefined>(undefined);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [savingBank, setSavingBank] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
       .then(setMe);
+    fetch("/api/me/bank-account")
+      .then((r) => r.json())
+      .then(setBank)
+      .catch(() => setBank(null));
   }, []);
 
   async function handleProfile(e: React.FormEvent<HTMLFormElement>) {
@@ -86,7 +99,32 @@ export default function AccountPage() {
     }
   }
 
-  if (!me) {
+  async function handleBank(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSavingBank(true);
+    const form = new FormData(e.currentTarget);
+
+    const res = await fetch("/api/me/bank-account", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accountName: form.get("accountName"),
+        bsb: form.get("bsb"),
+        accountNumber: form.get("accountNumber"),
+      }),
+    });
+
+    setSavingBank(false);
+    if (res.ok) {
+      setBank(await res.json());
+      toast.success("Bank details saved");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Failed to save bank details");
+    }
+  }
+
+  if (!me || bank === undefined) {
     return <div className="flex items-center justify-center h-32 text-muted-foreground">Loading...</div>;
   }
 
@@ -94,7 +132,7 @@ export default function AccountPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">My Account</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Manage your profile, email, and password</p>
+        <p className="text-muted-foreground text-sm mt-0.5">Manage your profile, email, bank details, and password</p>
       </div>
 
       {/* Profile + email */}
@@ -125,6 +163,38 @@ export default function AccountPage() {
             </div>
             <Button type="submit" disabled={savingProfile}>
               {savingProfile ? "Saving…" : "Save Profile"}
+            </Button>
+          </CardContent>
+        </Card>
+      </form>
+
+      {/* Bank details — used to prefill reimbursement claims */}
+      <form onSubmit={handleBank}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Bank Details</CardTitle>
+            <CardDescription>
+              Used as your &quot;details on file&quot; when submitting reimbursement claims. Claims already
+              submitted keep the details they were submitted with.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="accountName">Account Name</Label>
+              <Input id="accountName" name="accountName" defaultValue={bank?.accountName ?? ""} placeholder="Jane Smith" required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bsb">BSB</Label>
+                <Input id="bsb" name="bsb" defaultValue={bank?.bsb ?? ""} placeholder="000-000" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber">Account Number</Label>
+                <Input id="accountNumber" name="accountNumber" defaultValue={bank?.accountNumber ?? ""} placeholder="XXXXXXXXXX" required />
+              </div>
+            </div>
+            <Button type="submit" disabled={savingBank}>
+              {savingBank ? "Saving…" : "Save Bank Details"}
             </Button>
           </CardContent>
         </Card>

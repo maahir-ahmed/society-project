@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { RubricShell } from "@/components/rubric/RubricShell";
-import { RubricCopyPanel, type CopyRecord } from "@/components/rubric/RubricCopyPanel";
+import { RubricCopyPanel, type CopyRecord, type GrantRecord } from "@/components/rubric/RubricCopyPanel";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
@@ -39,7 +39,7 @@ export default async function RubricWebPage({
   if (!membership || membership.role !== "EXECUTIVE") notFound();
 
   const societyId = membership.societyId;
-  const [rooms, prints] = await Promise.all([
+  const [rooms, prints, grantEvents] = await Promise.all([
     prisma.roomBooking.findMany({
       where: { societyId },
       orderBy: { createdAt: "desc" },
@@ -47,8 +47,21 @@ export default async function RubricWebPage({
       include: { submittedBy: { select: { name: true } } },
     }),
     prisma.printingRequest.findMany({
-      where: { societyId },
+      // Only jobs waiting to be submitted on the portal; once marked submitted
+      // they drop off this list (but stay in the exec queue until pickup-ready).
+      where: { societyId, status: "PENDING_ARC_SUBMISSION" },
       orderBy: { createdAt: "desc" },
+      take: 25,
+      include: { submittedBy: { select: { name: true } } },
+    }),
+    prisma.contentRequest.findMany({
+      // Events with a Rubric event attached — the pool activity grants are submitted for.
+      where: {
+        societyId,
+        OR: [{ rubricEventId: { not: null } }, { rubricEventLink: { not: null } }],
+        status: { not: "CANCELLED" },
+      },
+      orderBy: { startDate: "desc" },
       take: 25,
       include: { submittedBy: { select: { name: true } } },
     }),
@@ -96,6 +109,23 @@ export default async function RubricWebPage({
     ],
   }));
 
+  const grants: GrantRecord[] = grantEvents.map((e) => ({
+    id: e.id,
+    title: `${e.eventName} · ${formatDate(e.startDate)}`,
+    status: e.activityGrantStatus,
+    attendanceHref: e.rubricEventId ? `/${society}/rubric/events/${e.rubricEventId}` : undefined,
+    fields: [
+      { label: "Event name", value: e.eventName },
+      { label: "Start date", value: formatDate(e.startDate) },
+      ...(e.endDate ? [{ label: "End date", value: formatDate(e.endDate) }] : []),
+      { label: "Location", value: e.location },
+      { label: "Description / key points", value: e.keyPoints },
+      ...(e.finishedBlurb ? [{ label: "Event blurb", value: e.finishedBlurb }] : []),
+      ...(e.rubricEventLink ? [{ label: "Rubric event link", value: e.rubricEventLink }] : []),
+      { label: "Submitted by", value: e.submittedBy.name },
+    ],
+  }));
+
   return (
     <RubricShell>
       <div className="space-y-3">
@@ -119,9 +149,11 @@ export default async function RubricWebPage({
             className="h-[70vh] w-full rounded-lg border bg-white lg:h-full lg:flex-1"
           />
           <RubricCopyPanel
+            societySlug={society}
             bookings={bookings}
             printing={printing}
-            initialTab={sp.type === "printing" ? "printing" : "room"}
+            grants={grants}
+            initialTab={sp.type === "printing" ? "printing" : sp.type === "grants" ? "grants" : "room"}
             initialId={sp.id}
           />
         </div>

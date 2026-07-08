@@ -5,20 +5,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDateTime } from "@/lib/utils";
 import { SIDED_LABELS, type Sided } from "@/lib/printing";
 import { PrintingDecisionButtons } from "@/components/requests/PrintingDecisionButtons";
+import { PrintingStageButton } from "@/components/requests/PrintingStageButton";
+import { DeletePrintingRequest } from "@/components/requests/DeletePrintingRequest";
 import { ArrowLeft, FileText, Printer } from "lucide-react";
 
 interface Props {
   params: Promise<{ society: string; id: string }>;
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-amber-100 text-amber-700",
-  APPROVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-red-100 text-red-700",
-};
 
 export default async function PrintingRequestDetailPage({ params }: Props) {
   const { society: societySlug, id } = await params;
@@ -37,6 +34,8 @@ export default async function PrintingRequestDetailPage({ params }: Props) {
   if (!request || request.societyId !== membership.societyId) redirect(`/${societySlug}/requests/printing`);
 
   const isExec = membership.role === "EXECUTIVE";
+  const isOwner = request.submittedById === session.user.id;
+  const canDelete = isExec || (isOwner && request.status === "PENDING_APPROVAL");
   const detail = (label: string, value: React.ReactNode) => (
     <div className="flex justify-between gap-4 py-1.5 text-sm border-b last:border-0">
       <span className="text-muted-foreground">{label}</span>
@@ -60,9 +59,10 @@ export default async function PrintingRequestDetailPage({ params }: Props) {
             <p className="text-sm text-muted-foreground">{request.clubName}</p>
           </div>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[request.status]}`}>
-          {request.status.toLowerCase()}
-        </span>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={request.status} />
+          {canDelete && <DeletePrintingRequest societySlug={societySlug} requestId={request.id} />}
+        </div>
       </div>
 
       <Card>
@@ -102,13 +102,51 @@ export default async function PrintingRequestDetailPage({ params }: Props) {
         </CardContent>
       </Card>
 
-      {isExec && request.status === "SUBMITTED" && (
+      {isExec && request.status === "PENDING_APPROVAL" && (
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               Approving deducts <strong>${Number(request.cost).toFixed(2)}</strong> from the secretarial allowance.
             </p>
             <PrintingDecisionButtons societySlug={societySlug} requestId={request.id} />
+          </CardContent>
+        </Card>
+      )}
+
+      {isExec && request.status === "PENDING_ARC_SUBMISSION" && (
+        <Card className="border-purple-200 bg-purple-50/50">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Approved — submit this job on the{" "}
+              <Link href={`/${societySlug}/rubric/web?type=printing&id=${request.id}`} className="text-blue-600 hover:underline">
+                Arc web portal
+              </Link>
+              , then mark it submitted.
+            </p>
+            <PrintingStageButton
+              societySlug={societySlug}
+              requestId={request.id}
+              action="mark_submitted"
+              label="Mark submitted"
+              successMessage="Marked as submitted to Arc"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {isExec && request.status === "SUBMITTED" && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Submitted to Arc — mark it once it&apos;s ready to collect from the Front Desk.
+            </p>
+            <PrintingStageButton
+              societySlug={societySlug}
+              requestId={request.id}
+              action="mark_ready"
+              label="Ready for pickup"
+              successMessage="Marked as ready for pickup"
+            />
           </CardContent>
         </Card>
       )}

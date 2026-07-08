@@ -9,7 +9,7 @@ type Params = { society: string; id: string };
 
 const nullableMoney = z.number().min(0).nullable().optional();
 const patchSchema = z.object({
-  name: z.string().min(1).max(80).optional(),
+  name: z.string().trim().min(1).max(80).optional(),
   group: z.enum(["PORTFOLIO", "OTHER"]).optional(),
   yearlyBudget: z.number().min(0).optional(),
   budget2024: nullableMoney,

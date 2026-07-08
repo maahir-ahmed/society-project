@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { MarkReimbursedButton } from "@/components/requests/MarkReimbursedButton";
+import { PrintingStageButton } from "@/components/requests/PrintingStageButton";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { treasuryApprovalsNeeded } from "@/lib/permissions";
 import { Shield, QrCode, Building2, Wallet, Banknote, CheckCircle, Printer } from "lucide-react";
@@ -58,7 +59,9 @@ export default async function ExecutiveQueuePage({ params }: Props) {
       orderBy: { updatedAt: "asc" },
     }),
     prisma.printingRequest.findMany({
-      where: { societyId, status: "SUBMITTED" },
+      // Everything still in flight: awaiting approval, awaiting Arc submission,
+      // or at Arc. Ready-for-pickup and rejected jobs leave the queue.
+      where: { societyId, status: { in: ["PENDING_APPROVAL", "PENDING_ARC_SUBMISSION", "SUBMITTED"] } },
       include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
       orderBy: { pickupAt: "asc" },
     }),
@@ -188,7 +191,7 @@ export default async function ExecutiveQueuePage({ params }: Props) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {Array.from({ length: needed }).map((_, i) => (
                               <div
                                 key={i}
@@ -203,6 +206,7 @@ export default async function ExecutiveQueuePage({ params }: Props) {
                                 )}
                               </div>
                             ))}
+                            <span className="text-xs text-muted-foreground">{approved}/{needed}</span>
                           </div>
                           <Button size="sm" className="text-xs">Approve</Button>
                         </div>
@@ -216,12 +220,12 @@ export default async function ExecutiveQueuePage({ params }: Props) {
         </section>
       )}
 
-      {/* Printing — Awaiting Approval */}
+      {/* Printing — in flight (approval → Arc submission → pickup readiness) */}
       {printingPending.length > 0 && (
         <section>
           <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
             <Printer className="h-4 w-4 text-blue-600" />
-            Printing — Awaiting Approval
+            Printing
             <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{printingPending.length}</span>
           </h2>
           <div className="space-y-2">
@@ -242,9 +246,26 @@ export default async function ExecutiveQueuePage({ params }: Props) {
                     </Link>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <span className="font-medium text-green-700">{formatCurrency(Number(p.cost))}</span>
-                      <Button asChild size="sm" variant="outline" className="text-xs border-blue-300">
-                        <Link href={`/${societySlug}/rubric/web?type=printing&id=${p.id}`}>Submit on Rubric →</Link>
-                      </Button>
+                      <StatusBadge status={p.status} />
+                      {p.status === "PENDING_APPROVAL" && (
+                        <Button asChild size="sm" variant="outline" className="text-xs border-blue-300">
+                          <Link href={`/${societySlug}/requests/printing/${p.id}`}>Review</Link>
+                        </Button>
+                      )}
+                      {p.status === "PENDING_ARC_SUBMISSION" && (
+                        <Button asChild size="sm" variant="outline" className="text-xs border-purple-300">
+                          <Link href={`/${societySlug}/rubric/web?type=printing&id=${p.id}`}>Submit on Rubric →</Link>
+                        </Button>
+                      )}
+                      {p.status === "SUBMITTED" && (
+                        <PrintingStageButton
+                          societySlug={societySlug}
+                          requestId={p.id}
+                          action="mark_ready"
+                          label="Ready for pickup"
+                          successMessage="Marked as ready for pickup"
+                        />
+                      )}
                     </div>
                   </div>
                 </CardContent>

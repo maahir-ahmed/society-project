@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, requireMembership } from "@/lib/api";
 import { createAuditLog } from "@/lib/audit";
 import { notifyExecs } from "@/lib/notifications";
-import { computePrintingCost, SECRETARIAL_ALLOWANCE } from "@/lib/printing";
+import { computePrintingCost, PRINTING_COUNTS_TOWARD_BUDGET, SECRETARIAL_ALLOWANCE } from "@/lib/printing";
 import { z } from "zod";
 
 // Contact details (club, name, email, phone) are derived server-side from the
@@ -20,10 +20,10 @@ const schema = z.object({
   additionalDetails: z.string().optional(),
 });
 
-// Budget left = tier allowance − sum of APPROVED request costs.
+// Budget left = tier allowance − sum of approved-and-beyond request costs.
 async function budgetFor(societyId: string, tier: keyof typeof SECRETARIAL_ALLOWANCE) {
   const approved = await prisma.printingRequest.aggregate({
-    where: { societyId, status: "APPROVED" },
+    where: { societyId, status: { in: PRINTING_COUNTS_TOWARD_BUDGET } },
     _sum: { cost: true },
   });
   const allowance = SECRETARIAL_ALLOWANCE[tier];

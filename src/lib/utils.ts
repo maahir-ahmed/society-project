@@ -50,12 +50,19 @@ export function statusColor(status: string): string {
     AWAITING_APPROVAL: "bg-yellow-100 text-yellow-700",
     REIMBURSEMENT_PENDING: "bg-blue-100 text-blue-700",
     REIMBURSED: "bg-green-100 text-green-700",
+    PENDING_APPROVAL: "bg-amber-100 text-amber-700",
+    PENDING_ARC_SUBMISSION: "bg-purple-100 text-purple-700",
+    READY_FOR_PICKUP: "bg-green-100 text-green-700",
+    NOT_SUBMITTED: "bg-gray-100 text-gray-600",
+    PAID: "bg-emerald-100 text-emerald-700",
   };
   return map[status] ?? "bg-gray-100 text-gray-700";
 }
 
 const STATUS_LABEL_OVERRIDES: Record<string, string> = {
   AWAITING_INFORMATION: "Need more information",
+  PENDING_ARC_SUBMISSION: "Pending Arc Submission",
+  READY_FOR_PICKUP: "Ready for Pickup",
 };
 
 export function statusLabel(status: string): string {

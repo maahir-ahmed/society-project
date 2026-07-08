@@ -9,6 +9,8 @@ const schema = z.object({
   contentRequestId: z.string().optional(),
   rubricEventId: z.string().optional(),
   rubricEventLink: z.string().optional(),
+  // false when linking an already-existing Rubric event (assignment, not submission)
+  markSubmitted: z.boolean().optional().default(true),
 });
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ society: string }> }) {
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ soc
     await prisma.contentRequest.update({
       where: { id: parsed.data.contentRequestId, societyId: membership!.societyId },
       data: {
-        rubricSubmittedAt: new Date(),
+        ...(parsed.data.markSubmitted ? { rubricSubmittedAt: new Date() } : {}),
         rubricEventId: parsed.data.rubricEventId,
         rubricEventLink: parsed.data.rubricEventLink,
       },

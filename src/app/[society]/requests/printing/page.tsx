@@ -5,19 +5,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDate } from "@/lib/utils";
-import { SECRETARIAL_ALLOWANCE } from "@/lib/printing";
+import { PRINTING_COUNTS_TOWARD_BUDGET, SECRETARIAL_ALLOWANCE } from "@/lib/printing";
 import { Printer, Plus, FileText, Info } from "lucide-react";
 
 interface Props {
   params: Promise<{ society: string }>;
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-amber-100 text-amber-700",
-  APPROVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-red-100 text-red-700",
-};
 
 export default async function PrintingRequestsPage({ params }: Props) {
   const { society: societySlug } = await params;
@@ -39,7 +34,7 @@ export default async function PrintingRequestsPage({ params }: Props) {
       include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.printingRequest.aggregate({ where: { societyId, status: "APPROVED" }, _sum: { cost: true } }),
+    prisma.printingRequest.aggregate({ where: { societyId, status: { in: PRINTING_COUNTS_TOWARD_BUDGET } }, _sum: { cost: true } }),
   ]);
 
   const allowance = SECRETARIAL_ALLOWANCE[tier];
@@ -113,9 +108,7 @@ export default async function PrintingRequestsPage({ params }: Props) {
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className="font-semibold text-green-700">${Number(r.cost).toFixed(2)}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[r.status]}`}>
-                      {r.status.toLowerCase()}
-                    </span>
+                    <StatusBadge status={r.status} />
                   </div>
                 </CardContent>
               </Card>

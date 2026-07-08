@@ -10,6 +10,7 @@ import { ThreadView } from "@/components/requests/ThreadView";
 import { TreasuryApprovalPanel } from "@/components/requests/TreasuryApprovalPanel";
 import { EditTreasuryClaim } from "@/components/requests/EditTreasuryClaim";
 import { DeleteTreasuryClaim } from "@/components/requests/DeleteTreasuryClaim";
+import { ClaimCategoryCard } from "@/components/requests/ClaimCategoryCard";
 import { SubmitClaimButton } from "@/components/requests/SubmitClaimButton";
 import { StatusUpdater } from "@/components/requests/StatusUpdater";
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils";
@@ -35,29 +36,38 @@ export default async function TreasuryDetailPage({ params }: Props) {
   });
   if (!membership) redirect("/");
 
-  const request = await prisma.treasuryRequest.findUnique({
-    where: { id },
-    include: {
-      submittedBy: { select: { id: true, name: true, avatarUrl: true, email: true } },
-      approvals: {
-        include: { approvedBy: { select: { id: true, name: true, avatarUrl: true } } },
-      },
-      receipts: true,
-      bankAccount: true,
-      thread: {
-        include: {
-          comments: {
-            include: { author: { select: { id: true, name: true, avatarUrl: true } } },
-            orderBy: { createdAt: "asc" },
+  const isExec = membership.role === "EXECUTIVE";
+  const [request, categories] = await Promise.all([
+    prisma.treasuryRequest.findUnique({
+      where: { id },
+      include: {
+        submittedBy: { select: { id: true, name: true, avatarUrl: true, email: true } },
+        approvals: {
+          include: { approvedBy: { select: { id: true, name: true, avatarUrl: true } } },
+        },
+        receipts: true,
+        bankAccount: true,
+        budgetCategory: { select: { id: true, name: true } },
+        thread: {
+          include: {
+            comments: {
+              include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+              orderBy: { createdAt: "asc" },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    isExec
+      ? prisma.budgetCategory.findMany({
+          where: { societyId: membership.societyId },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   if (!request || request.societyId !== membership.societyId) notFound();
-
-  const isExec = membership.role === "EXECUTIVE";
   const isOwner = request.submittedById === session.user.id;
   const canEdit = isExec || (isOwner && ["DRAFT", "AWAITING_APPROVAL"].includes(request.status));
   const amount = Number(request.amount);
@@ -77,7 +87,10 @@ export default async function TreasuryDetailPage({ params }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold truncate">{request.description}</h1>
-            <StatusBadge status={request.status} />
+            <StatusBadge
+              status={request.status}
+              detail={request.status === "AWAITING_APPROVAL" ? `${request.approvals.length}/${neededApprovals} approved` : undefined}
+            />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Submitted by {request.submittedBy.name} · {formatDateTime(request.createdAt)}
@@ -242,6 +255,17 @@ export default async function TreasuryDetailPage({ params }: Props) {
               </div>
             </CardContent>
           </Card>
+
+          {(isExec || request.budgetCategory) && (
+            <ClaimCategoryCard
+              societySlug={societySlug}
+              requestId={request.id}
+              categoryId={request.budgetCategory?.id ?? null}
+              categoryName={request.budgetCategory?.name ?? null}
+              categories={categories}
+              isExec={isExec}
+            />
+          )}
 
           {isExec && (
             <StatusUpdater

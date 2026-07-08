@@ -6,7 +6,7 @@ import Link from "next/link";
 import { RubricShell } from "@/components/rubric/RubricShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ExternalLink, Ticket, MapPin, Calendar, Users, DollarSign } from "lucide-react";
+import { Loader2, ArrowLeft, ExternalLink, Ticket, MapPin, Calendar, Users, DollarSign, Download } from "lucide-react";
 import { useRubricClient } from "@/hooks/useRubricClient";
 
 interface EventDetail {
@@ -60,6 +60,26 @@ export default function RubricEventDetailPage() {
   }, {});
   const dupNames = new Set(Object.entries(nameCounts).filter(([, n]) => n > 1).map(([k]) => k));
   const dupTicketCount = allTickets.filter((t) => dupNames.has(nameKey(t))).length;
+
+  // Attendance list export — required when submitting activity grants on the Arc portal.
+  function exportAttendanceCsv() {
+    if (allTickets.length === 0) return;
+    const header = "Name,Email,Ticket Type,Paid,Scanned In";
+    const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = allTickets.map((t) =>
+      [
+        cell(t.fullname), cell(t.email), cell(t.tickettypename), cell(t.totalbill),
+        cell(t["Ticket Scanned"] === "Yes" ? "Yes" : "No"),
+      ].join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = (details?.eventname ?? `event-${params.eventId}`).replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    a.href = url; a.download = `attendance-${slug}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <RubricShell>
@@ -121,9 +141,16 @@ export default function RubricEventDetailPage() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Ticket className="h-4 w-4" /> Ticket Sales
-                  </CardTitle>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Ticket className="h-4 w-4" /> Ticket Sales
+                    </CardTitle>
+                    {allTickets.length > 0 && (
+                      <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportAttendanceCsv}>
+                        <Download className="h-3.5 w-3.5" /> Attendance CSV
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {allTickets.length === 0 ? (

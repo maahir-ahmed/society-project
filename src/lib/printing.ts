@@ -1,4 +1,11 @@
-import type { SecretarialTier } from "@prisma/client";
+import type { PrintingStatus, SecretarialTier } from "@prisma/client";
+
+// Statuses that count against the secretarial allowance (approved and beyond).
+export const PRINTING_COUNTS_TOWARD_BUDGET: PrintingStatus[] = [
+  "PENDING_ARC_SUBMISSION",
+  "SUBMITTED",
+  "READY_FOR_PICKUP",
+];
 
 // Per-page printing rates (AUD). "double" applies to either double-sided flip option.
 export const PRINT_RATES = {

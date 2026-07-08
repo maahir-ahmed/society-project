@@ -352,6 +352,7 @@ function CategoryDialog({ base, category, onClose, onSaved }: {
 }) {
   const editing = !!category;
   const [busy, setBusy] = useState(false);
+  const [showPrevYears, setShowPrevYears] = useState(false);
   const [form, setForm] = useState({
     name: category?.name ?? "",
     group: category?.group === "OTHER" ? "OTHER" : "PORTFOLIO",
@@ -430,13 +431,27 @@ function CategoryDialog({ base, category, onClose, onSaved }: {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {numField("budget2024", "2024 Budget")}
-            {numField("budget2024v2", "2024 Budget v2")}
-            {numField("budget2025", "2025 Budget")}
-            {numField("usage2025", "2025 Usage")}
+          <div className="grid grid-cols-2 gap-3">
             {numField("yearlyBudget", "2026 Budget")}
             {numField("worstCase", "Worst case")}
+          </div>
+          <div className="rounded-lg border">
+            <button
+              type="button"
+              onClick={() => setShowPrevYears((v) => !v)}
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-medium hover:bg-muted/50"
+            >
+              <ChevronRight className={`h-4 w-4 transition-transform ${showPrevYears ? "rotate-90" : ""}`} />
+              Previous years
+            </button>
+            {showPrevYears && (
+              <div className="grid grid-cols-2 gap-3 border-t px-3 py-3">
+                {numField("budget2024", "2024 Budget")}
+                {numField("budget2024v2", "2024 Budget v2")}
+                {numField("budget2025", "2025 Budget")}
+                {numField("usage2025", "2025 Usage")}
+              </div>
+            )}
           </div>
           <div>
             <Label className="text-xs">Reasoning</Label>
