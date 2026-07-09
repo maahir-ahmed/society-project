@@ -231,8 +231,12 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                       <p className="text-sm font-medium mb-2">QR Code</p>
                       <RubricQrCode value={request.rubricEventLink} />
                     </div>
-                    {isExec && !request.rubricEventId && (
-                      <AssignRubricEvent societySlug={societySlug} contentRequestId={request.id} />
+                    {isExec && (
+                      <AssignRubricEvent
+                        societySlug={societySlug}
+                        contentRequestId={request.id}
+                        label="Reassign to a different event"
+                      />
                     )}
                     {isExec && (
                       <details className="text-sm">
@@ -253,17 +257,32 @@ export default async function ContentRequestDetailPage({ params }: Props) {
                     )}
                     {isExec && (
                       <div className="space-y-3">
-                        <SubmitToRubricDialog
-                          societySlug={societySlug}
-                          contentRequestId={request.id}
-                          defaultEventName={request.eventName}
-                          defaultDescription={request.keyPoints}
-                          defaultAddress={request.location}
-                          defaultStartDate={request.startDate}
-                          defaultEndDate={request.endDate}
-                          alreadySubmitted={request.rubricSubmittedAt}
-                        />
+                        <Button asChild size="sm" className="gap-2">
+                          <Link href={`/${societySlug}/rubric/web`}>
+                            <ExternalLink className="h-3.5 w-3.5" /> Create event on Rubric portal
+                          </Link>
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          Create the event on the Rubric portal, then assign it below.
+                        </p>
                         <AssignRubricEvent societySlug={societySlug} contentRequestId={request.id} />
+                        <details className="text-sm">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            Try submitting via the API instead (may not work yet)
+                          </summary>
+                          <div className="mt-2">
+                            <SubmitToRubricDialog
+                              societySlug={societySlug}
+                              contentRequestId={request.id}
+                              defaultEventName={request.eventName}
+                              defaultDescription={request.keyPoints}
+                              defaultAddress={request.location}
+                              defaultStartDate={request.startDate}
+                              defaultEndDate={request.endDate}
+                              alreadySubmitted={request.rubricSubmittedAt}
+                            />
+                          </div>
+                        </details>
                         <details className="text-sm">
                           <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                             Or attach an existing Rubric event link manually

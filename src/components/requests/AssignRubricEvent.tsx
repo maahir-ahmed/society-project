@@ -14,11 +14,13 @@ import { flattenEvents, type RubricEvent } from "@/lib/rubricEvents";
 interface Props {
   societySlug: string;
   contentRequestId: string;
+  label?: string;
 }
 
 // Links a content request to an event that already exists on Rubric (fetched
 // live from the portal), enabling the attendance list and activity grants.
-export function AssignRubricEvent({ societySlug, contentRequestId }: Props) {
+// Also used to correct an accidental assignment — re-picking overwrites the link.
+export function AssignRubricEvent({ societySlug, contentRequestId, label = "Assign existing Rubric event" }: Props) {
   const router = useRouter();
   const rubric = useRubricClient(societySlug);
   const [open, setOpen] = useState(false);
@@ -75,7 +77,7 @@ export function AssignRubricEvent({ societySlug, contentRequestId }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
-          <CalendarSearch className="h-3.5 w-3.5" /> Assign existing Rubric event
+          <CalendarSearch className="h-3.5 w-3.5" /> {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
