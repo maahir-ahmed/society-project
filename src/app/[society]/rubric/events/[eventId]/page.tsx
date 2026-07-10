@@ -40,6 +40,12 @@ const COLUMN_ORDER = [
 
 const fmt = (v: unknown) => (v === true ? "Yes" : v === false ? "No" : v == null ? "" : String(v));
 
+// Rubric bills come as "$26.67" (or "-" when free); parse to a number for totals.
+const parseBill = (v: unknown) => {
+  const n = parseFloat(String(v ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
 export default function RubricEventDetailPage() {
   const params = useParams<{ society: string; eventId: string }>();
   const rubric = useRubricClient(params.society);
@@ -82,6 +88,8 @@ export default function RubricEventDetailPage() {
     ...COLUMN_ORDER.filter((k) => present.has(k)),
     ...[...present].filter((k) => !COLUMN_ORDER.includes(k)),
   ];
+
+  const revenue = allTickets.reduce((acc, t) => acc + parseBill(t.totalbill), 0);
 
   // Attendance/ticket export — required when submitting activity grants on the Arc
   // portal. Exports every field Rubric provides, with Rubric's own field names.
@@ -225,15 +233,10 @@ export default function RubricEventDetailPage() {
                       <span className="font-semibold text-amber-800">{dupTicketCount} across {dupNames.size} {dupNames.size === 1 ? "name" : "names"}</span>
                     </div>
                   )}
-                  {allTickets.some((t) => (t as Record<string, unknown>).price != null) && (
+                  {revenue > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> Revenue</span>
-                      <span className="font-semibold">
-                        ${allTickets.reduce((acc, t) => {
-                          const price = Number((t as Record<string, unknown>).price ?? 0);
-                          return acc + price;
-                        }, 0).toFixed(2)}
-                      </span>
+                      <span className="font-semibold">${revenue.toFixed(2)}</span>
                     </div>
                   )}
                 </CardContent>
