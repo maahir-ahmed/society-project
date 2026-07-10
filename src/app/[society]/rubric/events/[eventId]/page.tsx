@@ -21,12 +21,24 @@ interface EventDetail {
 
 interface TicketData {
   allTickets?: unknown[];
+  allKeys?: string[]; // custom-question column keys for this event (already present on each ticket)
   scannedin?: number;
   eventname?: string;
   societyname?: string;
   societycolor?: string;
   logo_url?: string;
 }
+
+// Standard Rubric ticket fields, ordered most-useful-first for the spreadsheet.
+// Any keys not listed here (per-event custom questions) are appended after these.
+const COLUMN_ORDER = [
+  "fullname", "email", "phonenumber", "studentnumber", "standard_studentNumber",
+  "tickettypename", "paid", "totalbill", "paymentmethod", "Ticket Scanned",
+  "orderid", "ticketid", "tablenumber", "created", "updated",
+  "custom_questions_submitted", "sortindex",
+];
+
+const fmt = (v: unknown) => (v === true ? "Yes" : v === false ? "No" : v == null ? "" : String(v));
 
 export default function RubricEventDetailPage() {
   const params = useParams<{ society: string; eventId: string }>();
@@ -61,17 +73,23 @@ export default function RubricEventDetailPage() {
   const dupNames = new Set(Object.entries(nameCounts).filter(([, n]) => n > 1).map(([k]) => k));
   const dupTicketCount = allTickets.filter((t) => dupNames.has(nameKey(t))).length;
 
-  // Attendance list export — required when submitting activity grants on the Arc portal.
+  // Columns come from the actual keys Rubric returns (standard fields in a sensible
+  // order, then any per-event custom questions) so the table + CSV mirror Rubric.
+  const present = new Set<string>();
+  for (const t of allTickets) for (const k of Object.keys(t)) present.add(k);
+  for (const k of tickets?.allKeys ?? []) present.add(k);
+  const columns = [
+    ...COLUMN_ORDER.filter((k) => present.has(k)),
+    ...[...present].filter((k) => !COLUMN_ORDER.includes(k)),
+  ];
+
+  // Attendance/ticket export — required when submitting activity grants on the Arc
+  // portal. Exports every field Rubric provides, with Rubric's own field names.
   function exportAttendanceCsv() {
     if (allTickets.length === 0) return;
-    const header = "Name,Email,Ticket Type,Paid,Scanned In";
-    const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const rows = allTickets.map((t) =>
-      [
-        cell(t.fullname), cell(t.email), cell(t.tickettypename), cell(t.totalbill),
-        cell(t["Ticket Scanned"] === "Yes" ? "Yes" : "No"),
-      ].join(",")
-    );
+    const cell = (v: unknown) => `"${fmt(v).replace(/"/g, '""')}"`;
+    const header = columns.map(cell).join(",");
+    const rows = allTickets.map((t) => columns.map((c) => cell(t[c])).join(","));
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -157,14 +175,12 @@ export default function RubricEventDetailPage() {
                     <p className="text-sm text-muted-foreground">No ticket data available</p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                      <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                           <tr className="border-b text-left">
-                            <th className="pb-2 pr-3 font-medium text-muted-foreground">Name</th>
-                            <th className="pb-2 pr-3 font-medium text-muted-foreground">Email</th>
-                            <th className="pb-2 pr-3 font-medium text-muted-foreground">Ticket Type</th>
-                            <th className="pb-2 pr-3 font-medium text-muted-foreground">Paid</th>
-                            <th className="pb-2 font-medium text-muted-foreground">Scanned</th>
+                            {columns.map((c) => (
+                              <th key={c} className="pb-2 pr-3 font-medium text-muted-foreground">{c}</th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
@@ -172,20 +188,14 @@ export default function RubricEventDetailPage() {
                             const isDup = dupNames.has(nameKey(t));
                             return (
                             <tr key={(t.ticketid as number) ?? i} className={`border-b last:border-0 ${isDup ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-50"}`}>
-                              <td className="py-2 pr-3 font-medium">
-                                {(t.fullname as string) || "—"}
-                                {isDup && <span className="ml-1.5 text-xs text-amber-700">×{nameCounts[nameKey(t)]}</span>}
-                              </td>
-                              <td className="py-2 pr-3 text-muted-foreground">{(t.email as string) || "—"}</td>
-                              <td className="py-2 pr-3">{(t.tickettypename as string) || "—"}</td>
-                              <td className="py-2 pr-3 text-muted-foreground">{(t.totalbill as string) || "—"}</td>
-                              <td className="py-2">
-                                {t["Ticket Scanned"] === "Yes" ? (
-                                  <span className="text-green-600 font-medium">✓</span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
+                              {columns.map((c) => (
+                                <td key={c} className={`py-2 pr-3 ${c === "fullname" ? "font-medium" : "text-muted-foreground"}`}>
+                                  {fmt(t[c]) || "—"}
+                                  {c === "fullname" && isDup && (
+                                    <span className="ml-1.5 text-xs text-amber-700">×{nameCounts[nameKey(t)]}</span>
+                                  )}
+                                </td>
+                              ))}
                             </tr>
                             );
                           })}
