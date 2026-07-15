@@ -40,6 +40,8 @@ export function EditMemberDialog({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [titles, setTitles] = useState<SocietyTitle[]>([]);
   const [role, setRole] = useState(currentRole);
   const [title, setTitle] = useState(currentTitle ?? "__none__");
@@ -98,10 +100,23 @@ export function EditMemberDialog({
     }
   }
 
+  async function handleReset() {
+    if (!confirm(`Reset ${memberName}'s password? Their current password stops working immediately.`)) return;
+    setResetting(true);
+    const res = await fetch(`/api/societies/${societySlug}/members/${membershipId}/reset-password`, { method: "POST" });
+    setResetting(false);
+    if (res.ok) {
+      setTempPassword((await res.json()).tempPassword);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Failed to reset password");
+    }
+  }
+
   const titleOptions = titles.filter((t) => t.roleLevel === role);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setTempPassword(null); }}>
       <DialogTrigger asChild>
         <Button size="icon" variant="ghost" className="h-7 w-7">
           <Pencil className="h-3.5 w-3.5" />
@@ -155,6 +170,24 @@ export function EditMemberDialog({
               placeholder="+61 4xx xxx xxx"
               type="tel"
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Password</Label>
+            {tempPassword ? (
+              <div className="rounded-md border bg-muted/40 p-2">
+                <p className="text-xs text-muted-foreground mb-1.5">Temporary password — copy and share it now, it won&apos;t be shown again.</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded bg-background px-2 py-1 text-sm">{tempPassword}</code>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(tempPassword); toast.success("Copied"); }}>
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={resetting}>
+                {resetting ? "Resetting…" : "Reset password"}
+              </Button>
+            )}
           </div>
         </div>
         <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
