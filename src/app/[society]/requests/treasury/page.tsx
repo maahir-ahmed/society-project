@@ -24,7 +24,8 @@ export default async function TreasuryPage({ params }: Props) {
   });
   if (!membership) redirect("/");
 
-  const canSeeAll = membership.role === "EXECUTIVE" || membership.role === "DIRECTOR";
+  // Treasury claims are private to their submitter; only execs see everyone's.
+  const canSeeAll = membership.role === "EXECUTIVE";
 
   const requests = await prisma.treasuryRequest.findMany({
     where: {

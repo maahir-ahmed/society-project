@@ -27,6 +27,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
 
   const isExec = membership!.role === "EXECUTIVE";
   const isOwner = request.submittedById === session!.user.id;
+  // A claim is accessible only to its submitter and execs (404 hides existence).
+  if (!isExec && !isOwner) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const canEdit = isExec || (isOwner && EDITABLE_STATUSES.includes(request.status));
 
   // Owners may submit their own draft (DRAFT -> AWAITING_APPROVAL); every other

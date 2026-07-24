@@ -69,6 +69,8 @@ export default async function TreasuryDetailPage({ params }: Props) {
 
   if (!request || request.societyId !== membership.societyId) notFound();
   const isOwner = request.submittedById === session.user.id;
+  // A claim is viewable only by its submitter and execs.
+  if (!isExec && !isOwner) notFound();
   const canEdit = isExec || (isOwner && ["DRAFT", "AWAITING_APPROVAL"].includes(request.status));
   const amount = Number(request.amount);
   const neededApprovals = treasuryApprovalsNeeded(amount);

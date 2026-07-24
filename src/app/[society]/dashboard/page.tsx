@@ -45,7 +45,8 @@ export default async function DashboardPage({ params }: Props) {
       where: { societyId, status: { notIn: ["COMPLETED", "REJECTED"] } },
     }),
     prisma.treasuryRequest.count({
-      where: { societyId, status: { notIn: ["REIMBURSED", "REJECTED"] } },
+      // Claims are private to their submitter; only execs see everyone's.
+      where: { societyId, status: { notIn: ["REIMBURSED", "REJECTED"] }, ...(isExec ? {} : { submittedById: session.user.id }) },
     }),
     prisma.contentRequest.findMany({
       where: { societyId },
@@ -60,7 +61,7 @@ export default async function DashboardPage({ params }: Props) {
       take: 5,
     }),
     prisma.treasuryRequest.findMany({
-      where: { societyId },
+      where: { societyId, ...(isExec ? {} : { submittedById: session.user.id }) },
       include: { submittedBy: { select: { id: true, name: true, avatarUrl: true } } },
       orderBy: { updatedAt: "desc" },
       take: 5,
